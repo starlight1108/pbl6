@@ -12,13 +12,11 @@ def create_product():
     if data is None:
         return jsonify({'error': 'Invalid JSON'}), 400
 
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())
     user = User.query.get(user_id)
 
     if not user:
         return jsonify({'error': 'User not found'}), 404
-
-    data = request.get_json()
 
     if 'title' not in data or 'price' not in data:
         return jsonify({'error': 'Missing required fields: title, price'}), 400
