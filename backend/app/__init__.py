@@ -10,9 +10,14 @@ jwt = JWTManager()
 cors = CORS()
 
 
+import os
+
+
 def create_app(config_name='default'):
-    app = Flask(__name__)
+    app = Flask(__name__, static_folder='static', static_url_path='/static')
     app.config.from_object(config[config_name])
+
+    os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
     db.init_app(app)
     jwt.init_app(app)

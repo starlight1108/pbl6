@@ -42,6 +42,7 @@
         "id": 1,
         "email": "test@edu.cn",
         "nickname": "小明",
+        "avatar": "/static/images/default-avatar.png",
         "created_at": "2024-01-15T10:30:00.000000"
     }
 }
@@ -85,6 +86,7 @@
         "id": 1,
         "email": "test@edu.cn",
         "nickname": "小明",
+        "avatar": "/static/images/default-avatar.png",
         "created_at": "2024-01-15T10:30:00.000000"
     },
     "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
@@ -100,7 +102,83 @@
 
 ---
 
-## 3. 发布商品
+## 3. 获取用户信息
+
+**接口地址：** `GET /user/profile`
+
+**认证方式：** 需要 JWT Token
+
+**说明：** 获取当前登录用户的详细信息
+
+**成功响应 (200)：**
+```json
+{
+    "user": {
+        "id": 1,
+        "email": "test@edu.cn",
+        "nickname": "小明",
+        "avatar": "/static/images/default-avatar.png",
+        "created_at": "2024-01-15T10:30:00.000000"
+    }
+}
+```
+
+**错误响应：**
+
+| HTTP 状态码 | 说明 |
+|-------------|------|
+| 401 | 未登录或Token无效 |
+| 404 | 用户不存在 |
+
+---
+
+## 4. 上传用户头像
+
+**接口地址：** `POST /user/avatar`
+
+**认证方式：** 需要 JWT Token
+
+**说明：** 上传用户头像，自动压缩到200x200像素
+
+**请求格式：** `multipart/form-data`
+
+**请求参数：**
+
+| 参数名 | 类型 | 必填 | 说明 |
+|--------|------|------|------|
+| avatar | file | 是 | 图片文件 (png/jpg/jpeg/gif) |
+
+**限制说明：**
+- 文件大小：最大 5MB
+- 支持格式：`png`, `jpg`, `jpeg`, `gif`
+- 自动缩放：最大 200x200 像素
+
+**成功响应 (200)：**
+```json
+{
+    "message": "Avatar uploaded successfully",
+    "user": {
+        "id": 1,
+        "email": "test@edu.cn",
+        "nickname": "小明",
+        "avatar": "/static/avatars/abc123def.png",
+        "created_at": "2024-01-15T10:30:00.000000"
+    }
+}
+```
+
+**错误响应：**
+
+| HTTP 状态码 | 说明 |
+|-------------|------|
+| 400 | 未上传文件 / 无效文件类型 / 空文件名 |
+| 401 | 未登录或Token无效 |
+| 404 | 用户不存在 |
+| 500 | 服务器处理失败 |
+
+---
+
+## 5. 发布商品
 
 **接口地址：** `POST /products`
 
@@ -162,7 +240,7 @@ Authorization: Bearer <access_token>
 
 ---
 
-## 4. 商品列表浏览
+## 6. 商品列表浏览
 
 **接口地址：** `GET /products`
 
@@ -209,7 +287,7 @@ GET /products?page=1&per_page=10&category=书籍教材&keyword=Python
 
 ---
 
-## 5. 商品详情
+## 7. 商品详情
 
 **接口地址：** `GET /products/{product_id}`
 
@@ -260,13 +338,16 @@ GET /products/1
 |------|---------|------|------|------|
 | 1 | 用户注册 | POST | `/api/auth/register` | 否 |
 | 2 | 用户登录 | POST | `/api/auth/login` | 否 |
-| 3 | 发布商品 | POST | `/api/products` | 是 |
-| 4 | 商品列表 | GET | `/api/products` | 否 |
-| 5 | 商品详情 | GET | `/api/products/{id}` | 否 |
+| 3 | 获取用户信息 | GET | `/api/user/profile` | 是 |
+| 4 | 上传头像 | POST | `/api/user/avatar` | 是 |
+| 5 | 发布商品 | POST | `/api/products` | 是 |
+| 6 | 商品列表 | GET | `/api/products` | 否 |
+| 7 | 商品详情 | GET | `/api/products/{id}` | 否 |
 
 ---
 
 ## 验证说明
 
-✅ 所有接口均通过 **20个测试用例** 验证，文档与代码实现一致
-✅ 测试覆盖率：用户注册、登录、商品发布、商品浏览、商品详情的正常流程和异常场景
+✅ 所有接口均通过 **26个测试用例** 验证，文档与代码实现一致
+✅ 用户信息自动包含头像字段，无头像时返回默认头像
+✅ 头像上传自动压缩处理，优化存储和加载速度

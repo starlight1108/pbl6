@@ -8,4 +8,4 @@ def index():
     return jsonify({'message': 'API is running'})
 
 
-from . import auth, product
+from . import auth, product, user

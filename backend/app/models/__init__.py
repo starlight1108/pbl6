@@ -10,6 +10,7 @@ class User(db.Model):
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(256), nullable=False)
     nickname = db.Column(db.String(50))
+    avatar = db.Column(db.String(200))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     products = db.relationship('Product', backref='seller', lazy='dynamic')
@@ -22,10 +23,14 @@ class User(db.Model):
         return bcrypt.checkpw(password.encode('utf-8'), self.password_hash.encode('utf-8'))
 
     def to_dict(self):
+        default_avatar = '/static/images/default-avatar.png'
+        avatar_url = f'/static/avatars/{self.avatar}' if self.avatar else default_avatar
+
         return {
             'id': self.id,
             'email': self.email,
             'nickname': self.nickname,
+            'avatar': avatar_url,
             'created_at': self.created_at.isoformat()
         }
 
