@@ -3,7 +3,7 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from . import api_bp
 from .. import db
 from ..models import User
-from ..utils import allowed_file, save_avatar
+from ..utils import allowed_file, save_image
 
 
 @api_bp.route('/user/avatar', methods=['POST'])
@@ -27,7 +27,7 @@ def upload_avatar():
         return jsonify({'error': 'Invalid file type. Allowed: png, jpg, jpeg, gif'}), 400
 
     try:
-        filename = save_avatar(file, current_app.config['UPLOAD_FOLDER'])
+        filename = save_image(file, current_app.config['AVATAR_FOLDER'], max_size=(200, 200))
 
         user.avatar = filename
         db.session.commit()

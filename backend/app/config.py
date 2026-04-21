@@ -12,7 +12,8 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     CORS_ORIGINS = ['http://localhost:5173']
     MAX_CONTENT_LENGTH = 5 * 1024 * 1024
-    UPLOAD_FOLDER = os.path.join(basedir, 'static', 'avatars')
+    AVATAR_FOLDER = os.path.join(basedir, 'static', 'avatars')
+    PRODUCT_FOLDER = os.path.join(basedir, 'static', 'products')
     ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 
 

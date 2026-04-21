@@ -8,7 +8,7 @@ def allowed_file(filename, allowed_extensions):
            filename.rsplit('.', 1)[1].lower() in allowed_extensions
 
 
-def save_avatar(file, upload_folder):
+def save_image(file, upload_folder, max_size=(800, 800)):
     os.makedirs(upload_folder, exist_ok=True)
 
     ext = file.filename.rsplit('.', 1)[1].lower()
@@ -16,7 +16,8 @@ def save_avatar(file, upload_folder):
     filepath = os.path.join(upload_folder, filename)
 
     img = Image.open(file)
-    img.thumbnail((200, 200))
+    img.thumbnail(max_size)
     img.save(filepath, quality=85, optimize=True)
 
     return filename
+
