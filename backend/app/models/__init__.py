@@ -10,6 +10,7 @@ class User(db.Model):
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(256), nullable=False)
     nickname = db.Column(db.String(50))
+    avatar = db.Column(db.String(200))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     products = db.relationship('Product', backref='seller', lazy='dynamic')
@@ -22,10 +23,14 @@ class User(db.Model):
         return bcrypt.checkpw(password.encode('utf-8'), self.password_hash.encode('utf-8'))
 
     def to_dict(self):
+        default_avatar = '/static/images/default-avatar.png'
+        avatar_url = f'/static/avatars/{self.avatar}' if self.avatar else default_avatar
+
         return {
             'id': self.id,
             'email': self.email,
             'nickname': self.nickname,
+            'avatar': avatar_url,
             'created_at': self.created_at.isoformat()
         }
 
@@ -35,14 +40,18 @@ class Product(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     seller_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    title = db.Column(db.String(100), nullable=False)
+    title = db.Column(db.String(200), nullable=False)
     description = db.Column(db.Text)
     price = db.Column(db.Numeric(10, 2), nullable=False)
-    category = db.Column(db.String(50))
+    category = db.Column(db.String(50), default='其他')
+    image = db.Column(db.String(200))
     status = db.Column(db.String(20), default='active')
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     def to_dict(self):
+        default_image = '/static/images/default-product.png'
+        image_url = f'/static/products/{self.image}' if self.image else default_image
+
         seller_info = None
         if self.seller:
             seller_info = {
@@ -57,6 +66,7 @@ class Product(db.Model):
             'description': self.description,
             'price': float(self.price) if self.price else None,
             'category': self.category,
+            'image': image_url,
             'status': self.status,
             'created_at': self.created_at.isoformat()
         }

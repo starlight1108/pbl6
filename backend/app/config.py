@@ -11,6 +11,10 @@ class Config:
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL')
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     CORS_ORIGINS = ['http://localhost:5173']
+    MAX_CONTENT_LENGTH = 5 * 1024 * 1024
+    AVATAR_FOLDER = os.path.join(basedir, 'static', 'avatars')
+    PRODUCT_FOLDER = os.path.join(basedir, 'static', 'products')
+    ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 
 
 class DevelopmentConfig(Config):
