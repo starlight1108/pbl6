@@ -7,20 +7,20 @@ const router = useRouter()
 const userStore = useUserStore()
 
 const formData = ref({
-  username: '',
+  email: '',
   password: ''
 })
 
 const errorMessage = ref('')
 
 const handleSubmit = async () => {
-  if (!formData.value.username || !formData.value.password) {
+  if (!formData.value.email || !formData.value.password) {
     errorMessage.value = '请填写所有必填字段'
     return
   }
   
   try {
-    await userStore.login(formData.value.username, formData.value.password)
+    await userStore.login(formData.value.email, formData.value.password)
     router.push('/')
   } catch (error) {
     errorMessage.value = error.message || '登录失败，请重试'
@@ -36,12 +36,12 @@ const handleSubmit = async () => {
       
       <form @submit.prevent="handleSubmit" class="login-form">
         <div class="form-group">
-          <label for="username">用户名</label>
+          <label for="email">邮箱</label>
           <input 
-            type="text" 
-            id="username" 
-            v-model="formData.username" 
-            placeholder="请输入用户名"
+            type="email" 
+            id="email" 
+            v-model="formData.email" 
+            placeholder="请输入邮箱"
             required
           >
         </div>

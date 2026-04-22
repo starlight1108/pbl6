@@ -1,64 +1,76 @@
 import { defineStore } from 'pinia'
 
+const API_BASE_URL = 'http://127.0.0.1:5000/api'
+
 export const useUserStore = defineStore('user', {
   state: () => ({
     isLoggedIn: false,
-    username: '',
+    email: '',
+    nickname: '',
     token: ''
   }),
   
   actions: {
-    async login(username, password) {
-      return new Promise((resolve, reject) => {
-        setTimeout(() => {
-          if (username && password) {
-            this.isLoggedIn = true
-            this.username = username
-            this.token = 'mock-token-' + Date.now()
-            localStorage.setItem('user', JSON.stringify({
-              isLoggedIn: true,
-              username,
-              token: this.token
-            }))
-            resolve()
-          } else {
-            reject(new Error('用户名或密码不能为空'))
-          }
-        }, 1000)
-      })
+    async login(email, password) {
+      try {
+        const response = await fetch(`${API_BASE_URL}/auth/login`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ email, password })
+        })
+        
+        const data = await response.json()
+        
+        if (!response.ok) {
+          throw new Error(data.error || '登录失败')
+        }
+        
+        this.isLoggedIn = true
+        this.email = data.user.email
+        this.nickname = data.user.nickname
+        this.token = data.access_token
+        
+        localStorage.setItem('user', JSON.stringify({
+          isLoggedIn: true,
+          email: data.user.email,
+          nickname: data.user.nickname,
+          token: data.access_token
+        }))
+        
+        return data
+      } catch (error) {
+        throw error
+      }
     },
     
-    async register(username, password) {
-      return new Promise((resolve, reject) => {
-        setTimeout(() => {
-          const users = JSON.parse(localStorage.getItem('users') || '[]')
-          const existingUser = users.find(u => u.username === username)
-          
-          if (existingUser) {
-            reject(new Error('用户名已存在'))
-            return
-          }
-          
-          users.push({ username, password })
-          localStorage.setItem('users', JSON.stringify(users))
-          
-          this.isLoggedIn = true
-          this.username = username
-          this.token = 'mock-token-' + Date.now()
-          localStorage.setItem('user', JSON.stringify({
-            isLoggedIn: true,
-            username,
-            token: this.token
-          }))
-          
-          resolve()
-        }, 1000)
-      })
+    async register(email, password, nickname) {
+      try {
+        const response = await fetch(`${API_BASE_URL}/auth/register`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ email, password, nickname })
+        })
+        
+        const data = await response.json()
+        
+        if (!response.ok) {
+          throw new Error(data.error || '注册失败')
+        }
+        
+        return data
+      } catch (error) {
+        throw error
+      }
     },
     
     logout() {
       this.isLoggedIn = false
-      this.username = ''
+      this.email = ''
+      this.nickname = ''
       this.token = ''
       localStorage.removeItem('user')
     },
@@ -68,7 +80,8 @@ export const useUserStore = defineStore('user', {
       if (userData) {
         const user = JSON.parse(userData)
         this.isLoggedIn = user.isLoggedIn
-        this.username = user.username
+        this.email = user.email
+        this.nickname = user.nickname
         this.token = user.token
       }
     }

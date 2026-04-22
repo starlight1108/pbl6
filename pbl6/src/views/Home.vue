@@ -16,7 +16,7 @@ const handleLogout = () => {
     <div class="header">
       <h1>二手校园交易平台</h1>
       <div class="user-info">
-        <span>欢迎，{{ userStore.username }}</span>
+        <span>欢迎，{{ userStore.nickname || userStore.email }}</span>
         <button @click="handleLogout" class="logout-button">退出登录</button>
       </div>
     </div>

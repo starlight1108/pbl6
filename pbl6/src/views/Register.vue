@@ -7,7 +7,8 @@ const router = useRouter()
 const userStore = useUserStore()
 
 const formData = ref({
-  username: '',
+  email: '',
+  nickname: '',
   password: '',
   confirmPassword: ''
 })
@@ -15,7 +16,7 @@ const formData = ref({
 const errorMessage = ref('')
 
 const handleSubmit = async () => {
-  if (!formData.value.username || !formData.value.password || !formData.value.confirmPassword) {
+  if (!formData.value.email || !formData.value.password || !formData.value.confirmPassword) {
     errorMessage.value = '请填写所有必填字段'
     return
   }
@@ -31,8 +32,8 @@ const handleSubmit = async () => {
   }
   
   try {
-    await userStore.register(formData.value.username, formData.value.password)
-    router.push('/')
+    await userStore.register(formData.value.email, formData.value.password, formData.value.nickname)
+    router.push('/login')
   } catch (error) {
     errorMessage.value = error.message || '注册失败，请重试'
   }
@@ -47,18 +48,28 @@ const handleSubmit = async () => {
       
       <form @submit.prevent="handleSubmit" class="register-form">
         <div class="form-group">
-          <label for="username">用户名</label>
+          <label for="email">邮箱 *</label>
           <input 
-            type="text" 
-            id="username" 
-            v-model="formData.username" 
-            placeholder="请输入用户名"
+            type="email" 
+            id="email" 
+            v-model="formData.email" 
+            placeholder="请输入邮箱"
             required
           >
         </div>
         
         <div class="form-group">
-          <label for="password">密码</label>
+          <label for="nickname">昵称</label>
+          <input 
+            type="text" 
+            id="nickname" 
+            v-model="formData.nickname" 
+            placeholder="请输入昵称（可选）"
+          >
+        </div>
+        
+        <div class="form-group">
+          <label for="password">密码 *</label>
           <input 
             type="password" 
             id="password" 
@@ -69,7 +80,7 @@ const handleSubmit = async () => {
         </div>
         
         <div class="form-group">
-          <label for="confirmPassword">确认密码</label>
+          <label for="confirmPassword">确认密码 *</label>
           <input 
             type="password" 
             id="confirmPassword" 
