@@ -72,6 +72,7 @@ export const useUserStore = defineStore('user', {
       this.email = ''
       this.nickname = ''
       this.token = ''
+      this.isAdmin = false
       localStorage.removeItem('user')
     },
     
@@ -83,6 +84,7 @@ export const useUserStore = defineStore('user', {
         this.email = user.email
         this.nickname = user.nickname
         this.token = user.token
+        this.isAdmin = user.isAdmin || false
       }
     }
   }
