@@ -7,7 +7,8 @@ export const useUserStore = defineStore('user', {
     isLoggedIn: false,
     email: '',
     nickname: '',
-    token: ''
+    token: '',
+    userId: null
   }),
   
   actions: {
@@ -31,12 +32,14 @@ export const useUserStore = defineStore('user', {
         this.email = data.user.email
         this.nickname = data.user.nickname
         this.token = data.access_token
+        this.userId = data.user.id
         
         localStorage.setItem('user', JSON.stringify({
           isLoggedIn: true,
           email: data.user.email,
           nickname: data.user.nickname,
-          token: data.access_token
+          token: data.access_token,
+          userId: data.user.id
         }))
         
         return data
@@ -84,6 +87,7 @@ export const useUserStore = defineStore('user', {
         this.email = user.email
         this.nickname = user.nickname
         this.token = user.token
+        this.userId = user.userId
         this.isAdmin = user.isAdmin || false
       }
     }

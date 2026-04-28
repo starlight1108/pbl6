@@ -22,6 +22,11 @@ const router = createRouter({
       path: '/publish',
       name: 'publish',
       component: () => import('../views/Product发布.vue')
+    },
+    {
+      path: '/product/:id',
+      name: 'product-detail',
+      component: () => import('../views/ProductDetail.vue')
     }
   ],
 })

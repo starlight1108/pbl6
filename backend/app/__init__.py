@@ -22,7 +22,7 @@ def create_app(config_name='default'):
 
     db.init_app(app)
     jwt.init_app(app)
-    cors.init_app(app)
+    cors.init_app(app, supports_credentials=True)
 
     from . import models
     from .routes import api_bp

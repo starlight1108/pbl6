@@ -8,6 +8,7 @@ const userStore = useUserStore()
 const productStore = useProductStore()
 const router = useRouter()
 const isDropdownOpen = ref(false)
+const isLoading = ref(true)
 
 const handleLogout = () => {
   userStore.logout()
@@ -24,9 +25,9 @@ const handlePublish = () => {
   isDropdownOpen.value = false
 }
 
-const handleDeleteProduct = (id) => {
+const handleDeleteProduct = async (id) => {
   if (confirm('确定要删除这个商品吗？')) {
-    const success = productStore.deleteProduct(id)
+    const success = await productStore.deleteProduct(id, userStore.token)
     if (success) {
       alert('商品删除成功！')
     } else {
@@ -36,12 +37,11 @@ const handleDeleteProduct = (id) => {
 }
 
 const handleEditProduct = (id) => {
-  // 这里可以实现跳转到编辑页面的逻辑
   alert('编辑商品功能开发中...')
 }
 
-const handleToggleProductStatus = (id) => {
-  const success = productStore.toggleProductStatus(id)
+const handleToggleProductStatus = async (id) => {
+  const success = await productStore.toggleProductStatus(id, userStore.token)
   if (success) {
     alert('商品状态更新成功！')
   } else {
@@ -49,8 +49,18 @@ const handleToggleProductStatus = (id) => {
   }
 }
 
+const handleViewDetail = (id) => {
+  router.push(`/product/${id}`)
+}
+
+const loadProducts = async () => {
+  isLoading.value = true
+  await productStore.fetchProducts()
+  isLoading.value = false
+}
+
 onMounted(() => {
-  console.log('商品列表:', productStore.products)
+  loadProducts()
 })
 </script>
 
@@ -59,7 +69,7 @@ onMounted(() => {
     <div class="header">
       <h1>二手校园交易平台</h1>
       <div class="header-actions">
-        <span>欢迎，{{ userStore.username }}</span>
+        <span>欢迎，{{ userStore.nickname }}</span>
         <div class="dropdown">
           <button @click="toggleDropdown" class="dropdown-button">菜单</button>
           <div v-if="isDropdownOpen" class="dropdown-menu">
@@ -76,27 +86,30 @@ onMounted(() => {
       
       <div class="products-section">
         <h3>商品列表</h3>
-        <div v-if="productStore.products.length === 0" class="no-products">
+        <div v-if="isLoading" class="loading">
+          加载中...
+        </div>
+        <div v-else-if="productStore.products.length === 0" class="no-products">
           <p>暂无商品，快去发布第一个商品吧！</p>
         </div>
         <div v-else class="products-grid">
-          <div v-for="product in productStore.products" :key="product.id" class="product-card">
+          <div v-for="product in productStore.products" :key="product.id" class="product-card" @click="handleViewDetail(product.id)">
             <div class="product-image" v-if="product.image">
-              <img :src="product.image" :alt="product.name">
+              <img :src="'http://127.0.0.1:5000' + product.image" :alt="product.title">
             </div>
             <div class="product-info">
               <div class="product-header">
-                <h4>{{ product.name }}</h4>
+                <h4>{{ product.title }}</h4>
                 <div class="product-actions">
-                  <button v-if="userStore.isAdmin || product.publisher === userStore.username" @click="handleEditProduct(product.id)" class="edit-button">修改</button>
-                  <button v-if="userStore.isAdmin || product.publisher === userStore.username" @click="handleToggleProductStatus(product.id)" class="status-button">{{ product.isActive ? '下架' : '上架' }}</button>
-                  <button v-if="userStore.isAdmin" @click="handleDeleteProduct(product.id)" class="delete-button">删除</button>
+                  <button v-if="userStore.isAdmin || product.seller?.nickname === userStore.nickname" @click.stop="handleEditProduct(product.id)" class="edit-button">修改</button>
+                  <button v-if="userStore.isAdmin || product.seller?.nickname === userStore.nickname" @click.stop="handleToggleProductStatus(product.id)" class="status-button">{{ product.status === 'active' ? '下架' : '上架' }}</button>
+                  <button v-if="userStore.isAdmin" @click.stop="handleDeleteProduct(product.id)" class="delete-button">删除</button>
                 </div>
               </div>
               <p class="product-description">{{ product.description }}</p>
               <p class="product-price">¥{{ product.price.toFixed(2) }}</p>
-              <p class="product-status" :class="{ 'inactive': !product.isActive }">{{ product.isActive ? '上架' : '下架' }}</p>
-              <p class="product-date">{{ new Date(product.createdAt).toLocaleString() }}</p>
+              <p class="product-status" :class="{ 'inactive': product.status !== 'active' }">{{ product.status === 'active' ? '上架' : '下架' }}</p>
+              <p class="product-date">{{ new Date(product.created_at).toLocaleString() }}</p>
             </div>
           </div>
         </div>
@@ -230,6 +243,13 @@ onMounted(() => {
   color: #333;
   margin-bottom: 20px;
   font-size: 20px;
+}
+
+.loading {
+  text-align: center;
+  padding: 40px;
+  color: #666;
+  font-size: 16px;
 }
 
 .no-products {

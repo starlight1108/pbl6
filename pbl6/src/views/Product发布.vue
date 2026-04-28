@@ -11,38 +11,16 @@ const product = ref({
   name: '',
   description: '',
   price: '',
-  image: ''
+  category: '其他'
 })
 const selectedFile = ref(null)
+
+const categories = ['书籍教材', '电子数码', '生活用品', '交通工具', '体育用品', '服饰鞋包', '美妆护肤', '其他']
 
 const handleFileChange = (event) => {
   const file = event.target.files[0]
   if (file) {
     selectedFile.value = file
-    // 读取文件为base64
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      product.value.image = e.target.result
-      console.log('图片已转换为base64')
-    }
-    reader.readAsDataURL(file)
-  }
-}
-
-const uploadImage = async (file) => {
-  try {
-    // 使用base64编码存储图片
-    return new Promise((resolve) => {
-      const reader = new FileReader()
-      reader.onload = (e) => {
-        console.log('图片已转换为base64')
-        resolve({ success: true, filename: e.target.result })
-      }
-      reader.readAsDataURL(file)
-    })
-  } catch (error) {
-    console.error('上传失败:', error)
-    return Promise.reject(error)
   }
 }
 
@@ -57,36 +35,25 @@ const submitForm = async () => {
     return
   }
   
+  if (!userStore.token) {
+    alert('请先登录')
+    router.push('/login')
+    return
+  }
+  
   try {
-    // 如果选择了图片，上传图片
-    if (selectedFile.value) {
-      const uploadResult = await uploadImage(selectedFile.value)
-      if (uploadResult.success) {
-        product.value.image = uploadResult.filename
-        console.log('图片上传成功:', uploadResult.filename)
-      }
-    }
-    
-    // 保存商品到store
-    productStore.addProduct({
+    console.log('发布商品，token:', userStore.token)
+    await productStore.addProduct({
       ...product.value,
-      price: parseFloat(product.value.price)
-    }, userStore.username)
+      price: parseFloat(product.value.price),
+      image: selectedFile.value
+    }, userStore.token)
     
-    console.log('发布商品:', product.value)
     alert('商品发布成功！')
-    
-    product.value = {
-      name: '',
-      description: '',
-      price: '',
-      image: ''
-    }
-    selectedFile.value = null
-    document.getElementById('image').value = ''
+    router.push('/')
   } catch (error) {
     console.error('发布失败:', error)
-    alert('发布失败，请重试')
+    alert('发布失败: ' + error.message)
   }
 }
 </script>
@@ -104,6 +71,12 @@ const submitForm = async () => {
         <div class="form-group">
           <label for="name">商品名称</label>
           <input type="text" id="name" v-model="product.name" required>
+        </div>
+        <div class="form-group">
+          <label for="category">商品分类</label>
+          <select id="category" v-model="product.category">
+            <option v-for="cat in categories" :key="cat" :value="cat">{{ cat }}</option>
+          </select>
         </div>
         <div class="form-group">
           <label for="description">商品描述</label>

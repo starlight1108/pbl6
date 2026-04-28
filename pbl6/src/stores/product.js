@@ -1,68 +1,116 @@
 import { defineStore } from 'pinia'
 
+const API_BASE_URL = 'http://127.0.0.1:5000/api'
+
 export const useProductStore = defineStore('product', {
   state: () => ({
-    products: JSON.parse(localStorage.getItem('products')) || []
+    products: []
   }),
   
   actions: {
-    addProduct(product, username) {
-      // 生成唯一ID
-      const id = Date.now().toString()
-      const newProduct = {
-        id,
-        ...product,
-        createdAt: new Date().toISOString(),
-        publisher: username,
-        isActive: true
-      }
-      
-      this.products.push(newProduct)
-      this.saveToLocalStorage()
-      return newProduct
-    },
-    
-    updateProduct(id, updatedProduct) {
-      const index = this.products.findIndex(product => product.id === id)
-      if (index !== -1) {
-        this.products[index] = {
-          ...this.products[index],
-          ...updatedProduct,
-          updatedAt: new Date().toISOString()
+    async fetchProducts() {
+      try {
+        const response = await fetch(`${API_BASE_URL}/products`)
+        const data = await response.json()
+        if (data.products) {
+          this.products = data.products
         }
-        this.saveToLocalStorage()
         return true
+      } catch (error) {
+        console.error('获取商品列表失败:', error)
+        return false
       }
-      return false
     },
     
-    toggleProductStatus(id) {
-      const index = this.products.findIndex(product => product.id === id)
-      if (index !== -1) {
-        this.products[index].isActive = !this.products[index].isActive
-        this.products[index].updatedAt = new Date().toISOString()
-        this.saveToLocalStorage()
-        return true
+    async addProduct(product, token) {
+      try {
+        const formData = new FormData()
+        formData.append('title', product.name)
+        formData.append('price', product.price)
+        formData.append('description', product.description)
+        formData.append('category', product.category || '其他')
+        
+        if (product.image) {
+          formData.append('image', product.image)
+        }
+        
+        console.log('发送请求到:', `${API_BASE_URL}/products`)
+        console.log('token:', token ? '存在' : '不存在')
+        console.log('formData内容:', {
+          title: product.name,
+          price: product.price,
+          description: product.description,
+          category: product.category,
+          hasImage: !!product.image
+        })
+        
+        const response = await fetch(`${API_BASE_URL}/products`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          },
+          body: formData
+        })
+        
+        console.log('响应状态:', response.status)
+        const data = await response.json()
+        console.log('响应数据:', data)
+        
+        if (response.ok) {
+          this.products.unshift(data.product)
+          return data.product
+        } else {
+          throw new Error(data.error || '发布商品失败，状态码: ' + response.status)
+        }
+      } catch (error) {
+        console.error('发布商品失败:', error)
+        throw error
       }
-      return false
     },
     
-    getProductById(id) {
-      return this.products.find(product => product.id === id)
-    },
-    
-    deleteProduct(id) {
-      const index = this.products.findIndex(product => product.id === id)
-      if (index !== -1) {
-        this.products.splice(index, 1)
-        this.saveToLocalStorage()
-        return true
+    async toggleProductStatus(id, token) {
+      try {
+        const response = await fetch(`${API_BASE_URL}/products/${id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ status: 'inactive' })
+        })
+        
+        if (response.ok) {
+          const index = this.products.findIndex(p => p.id === id)
+          if (index !== -1) {
+            this.products[index].status = this.products[index].status === 'active' ? 'inactive' : 'active'
+          }
+          return true
+        }
+        return false
+      } catch (error) {
+        console.error('更新商品状态失败:', error)
+        return false
       }
-      return false
     },
     
-    saveToLocalStorage() {
-      localStorage.setItem('products', JSON.stringify(this.products))
+    async deleteProduct(id, token) {
+      try {
+        const response = await fetch(`${API_BASE_URL}/products/${id}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        })
+        
+        if (response.ok) {
+          this.products = this.products.filter(p => p.id !== id)
+          return true
+        }
+        return false
+      } catch (error) {
+        console.error('删除商品失败:', error)
+        return false
+      }
     }
   }
 })

@@ -48,6 +48,8 @@ class Product(db.Model):
     status = db.Column(db.String(20), default='active')
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
+    comments = db.relationship('Comment', backref='product', lazy='dynamic')
+
     def to_dict(self):
         default_image = '/static/images/default-product.png'
         image_url = f'/static/products/{self.image}' if self.image else default_image
@@ -68,5 +70,34 @@ class Product(db.Model):
             'category': self.category,
             'image': image_url,
             'status': self.status,
+            'created_at': self.created_at.isoformat(),
+            'comment_count': self.comments.count()
+        }
+
+
+class Comment(db.Model):
+    __tablename__ = 'comments'
+
+    id = db.Column(db.Integer, primary_key=True)
+    product_id = db.Column(db.Integer, db.ForeignKey('products.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    content = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    user = db.relationship('User')
+
+    def to_dict(self):
+        user_info = None
+        if self.user:
+            user_info = {
+                'id': self.user.id,
+                'nickname': self.user.nickname,
+                'avatar': f'/static/avatars/{self.user.avatar}' if self.user.avatar else '/static/images/default-avatar.png'
+            }
+        return {
+            'id': self.id,
+            'product_id': self.product_id,
+            'user': user_info,
+            'content': self.content,
             'created_at': self.created_at.isoformat()
         }

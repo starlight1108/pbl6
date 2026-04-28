@@ -5,12 +5,23 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 load_dotenv(os.path.join(os.path.dirname(basedir), '.env'))
 
 
+def get_database_uri():
+    db_url = os.environ.get('DATABASE_URL')
+    if db_url and db_url.startswith('sqlite:///'):
+        db_path = db_url.replace('sqlite:///', '')
+        if not os.path.isabs(db_path):
+            backend_dir = os.path.dirname(basedir)
+            db_path = os.path.join(backend_dir, db_path)
+        return f'sqlite:///{db_path}'
+    return db_url
+
+
 class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY')
     JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY')
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL')
+    SQLALCHEMY_DATABASE_URI = get_database_uri()
     SQLALCHEMY_TRACK_MODIFICATIONS = False
-    CORS_ORIGINS = ['http://localhost:5173']
+    CORS_ORIGINS = ['http://localhost:5173', 'http://localhost:5174']
     MAX_CONTENT_LENGTH = 5 * 1024 * 1024
     AVATAR_FOLDER = os.path.join(basedir, 'static', 'avatars')
     PRODUCT_FOLDER = os.path.join(basedir, 'static', 'products')
