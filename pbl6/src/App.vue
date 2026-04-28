@@ -1,11 +1,27 @@
 <script setup>
-import { onMounted } from 'vue'
+import { onMounted, watch, nextTick } from 'vue'
 import { useUserStore } from './stores/user.js'
+import { useRouter } from 'vue-router'
 
 const userStore = useUserStore()
+const router = useRouter()
 
-onMounted(() => {
+onMounted(async () => {
   userStore.initUser()
+  
+  await nextTick()
+  
+  const path = router.currentRoute.value.path
+  if (!userStore.isLoggedIn && path !== '/login' && !path.startsWith('/register')) {
+    router.push('/login')
+  }
+})
+
+watch(() => userStore.isLoggedIn, (loggedIn) => {
+  const path = router.currentRoute.value.path
+  if (!loggedIn && path !== '/login' && !path.startsWith('/register')) {
+    router.push('/login')
+  }
 })
 </script>
 
