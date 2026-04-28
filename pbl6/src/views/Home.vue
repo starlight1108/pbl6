@@ -2,12 +2,25 @@
 import { useUserStore } from '../stores/user.js'
 import { useProductStore } from '../stores/product.js'
 import { useRouter } from 'vue-router'
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 
 const userStore = useUserStore()
 const productStore = useProductStore()
 const router = useRouter()
 const isDropdownOpen = ref(false)
+
+const getAvatarUrl = () => {
+  const baseUrl = 'http://127.0.0.1:5000'
+  const defaultAvatar = '/static/images/default-avatar.png'
+  
+  if (userStore.avatar && userStore.avatar.startsWith('/')) {
+    return baseUrl + userStore.avatar
+  } else if (userStore.avatar) {
+    return baseUrl + '/' + userStore.avatar
+  } else {
+    return baseUrl + defaultAvatar
+  }
+}
 
 const handleLogout = () => {
   userStore.logout()
@@ -55,6 +68,10 @@ onMounted(async () => {
             <button v-if="userStore.isLoggedIn" @click="handleLogout" class="dropdown-item logout-item">退出登录</button>
           </div>
         </div>
+        </template>
+        <template v-else>
+          <button @click="router.push('/login')" class="login-button">登录</button>
+        </template>
       </div>
     </div>
     
@@ -120,6 +137,20 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   gap: 15px;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.user-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #4CAF50;
 }
 
 .header-actions span {
