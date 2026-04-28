@@ -2,7 +2,7 @@
 import { useUserStore } from '../stores/user.js'
 import { useProductStore } from '../stores/product.js'
 import { useRouter } from 'vue-router'
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted } from 'vue'
 
 const userStore = useUserStore()
 const productStore = useProductStore()
@@ -22,6 +22,16 @@ const getAvatarUrl = () => {
   }
 }
 
+const getProductImageUrl = (imagePath) => {
+  const baseUrl = 'http://127.0.0.1:5000'
+  if (imagePath && imagePath.startsWith('/')) {
+    return baseUrl + imagePath
+  } else if (imagePath) {
+    return baseUrl + '/' + imagePath
+  }
+  return baseUrl + '/static/images/default-product.png'
+}
+
 const handleLogout = () => {
   userStore.logout()
   router.push('/login')
@@ -33,24 +43,41 @@ const toggleDropdown = () => {
 }
 
 const handlePublish = () => {
-  if (!userStore.isLoggedIn) {
-    router.push('/login')
-    return
-  }
-  router.push('/products/publish')
+  router.push('/publish')
   isDropdownOpen.value = false
 }
 
-const goToProducts = () => {
-  router.push('/products')
+const handleDeleteProduct = (id) => {
+  if (confirm('确定要删除这个商品吗？')) {
+    const success = productStore.deleteProduct(id)
+    if (success) {
+      alert('商品删除成功！')
+    } else {
+      alert('删除失败，请重试')
+    }
+  }
 }
 
-const goToDetail = (productId) => {
-  router.push(`/products/${productId}`)
+const handleEditProduct = (id) => {
+  alert('编辑商品功能开发中...')
+}
+
+const handleToggleProductStatus = (id) => {
+  const success = productStore.toggleProductStatus(id)
+  if (success) {
+    alert('商品状态更新成功！')
+  } else {
+    alert('更新失败，请重试')
+  }
 }
 
 onMounted(async () => {
-  await productStore.fetchProducts()
+  try {
+    await productStore.fetchProducts()
+    console.log('商品列表:', productStore.products)
+  } catch (error) {
+    console.error('获取商品失败:', error)
+  }
 })
 </script>
 
@@ -59,15 +86,18 @@ onMounted(async () => {
     <div class="header">
       <h1>二手校园交易平台</h1>
       <div class="header-actions">
-        <span v-if="userStore.isLoggedIn">欢迎，{{ userStore.nickname || userStore.email }}</span>
-        <router-link v-else to="/login" class="login-link">登录</router-link>
-        <div class="dropdown">
-          <button @click="toggleDropdown" class="dropdown-button">菜单</button>
-          <div v-if="isDropdownOpen" class="dropdown-menu">
-            <button @click="handlePublish" class="dropdown-item publish-item">发布商品</button>
-            <button v-if="userStore.isLoggedIn" @click="handleLogout" class="dropdown-item logout-item">退出登录</button>
+        <template v-if="userStore.isLoggedIn">
+          <div class="user-info">
+            <img :src="getAvatarUrl()" :alt="userStore.nickname" class="user-avatar">
+            <span>欢迎，{{ userStore.nickname }}</span>
           </div>
-        </div>
+          <div class="dropdown">
+            <button @click="toggleDropdown" class="dropdown-button">菜单</button>
+            <div v-if="isDropdownOpen" class="dropdown-menu">
+              <button @click="handlePublish" class="dropdown-item publish-item">发布商品</button>
+              <button @click="handleLogout" class="dropdown-item logout-item">退出登录</button>
+            </div>
+          </div>
         </template>
         <template v-else>
           <button @click="router.push('/login')" class="login-button">登录</button>
@@ -80,30 +110,28 @@ onMounted(async () => {
       <p>这里是二手校园交易平台的首页，您可以在这里浏览和发布二手商品。</p>
       
       <div class="products-section">
-        <div class="section-header">
-          <h3>最新商品</h3>
-          <button @click="goToProducts" class="view-all-button">查看全部</button>
-        </div>
-        
+        <h3>商品列表</h3>
         <div v-if="productStore.products.length === 0" class="no-products">
           <p>暂无商品，快去发布第一个商品吧！</p>
-          <button @click="handlePublish" class="publish-button">发布商品</button>
         </div>
-        
         <div v-else class="products-grid">
-          <div 
-            v-for="product in productStore.products.slice(0, 8)" 
-            :key="product.id" 
-            class="product-card"
-            @click="goToDetail(product.id)"
-          >
+          <div v-for="product in productStore.products" :key="product.id" class="product-card">
             <div class="product-image">
+              <img :src="getProductImageUrl(product.image)" :alt="product.title">
               <span class="category-tag">{{ product.category }}</span>
             </div>
             <div class="product-info">
-              <h4>{{ product.title }}</h4>
-              <p class="product-price">¥{{ product.price }}</p>
+              <div class="product-header">
+                <h4>{{ product.title }}</h4>
+                <div class="product-actions">
+                  <button v-if="userStore.isAdmin || product.seller_id === userStore.id" @click="handleEditProduct(product.id)" class="edit-button">修改</button>
+                  <button v-if="userStore.isAdmin || product.seller_id === userStore.id" @click="handleToggleProductStatus(product.id)" class="status-button">{{ product.status === 'active' ? '下架' : '上架' }}</button>
+                  <button v-if="userStore.isAdmin" @click="handleDeleteProduct(product.id)" class="delete-button">删除</button>
+                </div>
+              </div>
               <p class="product-seller">卖家：{{ product.seller?.nickname || '匿名' }}</p>
+              <p class="product-description">{{ product.description }}</p>
+              <p class="product-price">¥{{ product.price?.toFixed(2) }}</p>
             </div>
           </div>
         </div>
@@ -120,7 +148,7 @@ onMounted(async () => {
 
 .header {
   background-color: white;
-  padding: 20px;
+  padding: 20px 40px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   display: flex;
   justify-content: space-between;
@@ -129,8 +157,8 @@ onMounted(async () => {
 
 .header h1 {
   color: #4CAF50;
-  margin: 0;
   font-size: 24px;
+  margin: 0;
 }
 
 .header-actions {
@@ -158,53 +186,56 @@ onMounted(async () => {
   font-size: 16px;
 }
 
-.login-link {
-  color: #4CAF50;
-  text-decoration: none;
-  font-weight: bold;
+.login-button {
+  padding: 10px 24px;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.login-button:hover {
+  background-color: #45a049;
 }
 
 .dropdown {
   position: relative;
-  display: inline-block;
 }
 
 .dropdown-button {
   padding: 8px 16px;
-  background-color: #666;
-  color: white;
+  background-color: #f0f0f0;
   border: none;
   border-radius: 4px;
   cursor: pointer;
   font-size: 14px;
-}
-
-.dropdown-button:hover {
-  background-color: #555;
 }
 
 .dropdown-menu {
   position: absolute;
   right: 0;
   top: 100%;
-  margin-top: 5px;
   background-color: white;
-  border: 1px solid #ddd;
   border-radius: 4px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  z-index: 1000;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  margin-top: 5px;
   min-width: 120px;
+  z-index: 100;
 }
 
 .dropdown-item {
   display: block;
   width: 100%;
-  padding: 8px 12px;
+  padding: 10px 16px;
   border: none;
   background: none;
   text-align: left;
   cursor: pointer;
   font-size: 14px;
+  transition: background-color 0.2s;
 }
 
 .dropdown-item:hover {
@@ -220,12 +251,9 @@ onMounted(async () => {
 }
 
 .content {
+  padding: 40px;
   max-width: 1200px;
-  margin: 40px auto;
-  padding: 20px;
-  background-color: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  margin: 0 auto;
 }
 
 .content h2 {
@@ -233,132 +261,131 @@ onMounted(async () => {
   margin-bottom: 10px;
 }
 
-.content p {
+.content > p {
   color: #666;
-  font-size: 16px;
-  line-height: 1.5;
-  margin-bottom: 20px;
+  margin-bottom: 30px;
 }
 
-.products-section {
-  margin-top: 30px;
-}
-
-.section-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-}
-
-.section-header h3 {
+.products-section h3 {
   color: #333;
-  font-size: 20px;
-  margin: 0;
-}
-
-.view-all-button {
-  padding: 8px 16px;
-  background-color: #4CAF50;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 14px;
-}
-
-.view-all-button:hover {
-  background-color: #45a049;
+  margin-bottom: 20px;
 }
 
 .no-products {
-  background-color: #f9f9f9;
-  padding: 40px;
   text-align: center;
+  padding: 60px 20px;
+  background-color: white;
   border-radius: 8px;
-  border: 1px dashed #ddd;
-}
-
-.no-products p {
-  color: #999;
-  font-size: 16px;
-  margin-bottom: 20px;
-}
-
-.publish-button {
-  padding: 12px 24px;
-  background-color: #4CAF50;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 16px;
-}
-
-.publish-button:hover {
-  background-color: #45a049;
+  color: #666;
 }
 
 .products-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 20px;
 }
 
 .product-card {
   background-color: white;
-  border: 1px solid #eee;
   border-radius: 8px;
   overflow: hidden;
-  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   transition: transform 0.2s, box-shadow 0.2s;
 }
 
 .product-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .product-image {
-  height: 150px;
-  background-color: #e0e0e0;
-  display: flex;
-  align-items: flex-start;
-  justify-content: flex-end;
-  padding: 10px;
+  position: relative;
+  height: 200px;
+  overflow: hidden;
+  background-color: #f5f5f5;
+}
+
+.product-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .category-tag {
+  position: absolute;
+  top: 10px;
+  left: 10px;
   background-color: #4CAF50;
   color: white;
-  padding: 4px 8px;
+  padding: 4px 12px;
   border-radius: 4px;
   font-size: 12px;
 }
 
 .product-info {
-  padding: 15px;
+  padding: 16px;
 }
 
-.product-info h4 {
+.product-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 8px;
+}
+
+.product-header h4 {
+  margin: 0;
   color: #333;
-  margin: 0 0 10px 0;
   font-size: 16px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+}
+
+.product-seller {
+  color: #999;
+  font-size: 12px;
+  margin: 4px 0 8px 0;
+}
+
+.product-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.edit-button,
+.status-button,
+.delete-button {
+  padding: 4px 8px;
+  font-size: 12px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.edit-button {
+  background-color: #2196F3;
+  color: white;
+}
+
+.status-button {
+  background-color: #FF9800;
+  color: white;
+}
+
+.delete-button {
+  background-color: #f44336;
+  color: white;
+}
+
+.product-description {
+  color: #666;
+  font-size: 14px;
+  margin-bottom: 12px;
+  line-height: 1.4;
 }
 
 .product-price {
   color: #f44336;
   font-size: 18px;
   font-weight: bold;
-  margin: 0 0 8px 0;
-}
-
-.product-seller {
-  color: #999;
-  font-size: 14px;
   margin: 0;
 }
 </style>

@@ -5,6 +5,7 @@ const API_BASE_URL = 'http://127.0.0.1:5000/api'
 export const useUserStore = defineStore('user', {
   state: () => ({
     isLoggedIn: false,
+    id: null,
     email: '',
     nickname: '',
     avatar: '',
@@ -29,6 +30,7 @@ export const useUserStore = defineStore('user', {
         }
         
         this.isLoggedIn = true
+        this.id = data.user.id
         this.email = data.user.email
         this.nickname = data.user.nickname
         this.avatar = data.user.avatar
@@ -36,6 +38,7 @@ export const useUserStore = defineStore('user', {
         
         localStorage.setItem('user', JSON.stringify({
           isLoggedIn: true,
+          id: data.user.id,
           email: data.user.email,
           nickname: data.user.nickname,
           avatar: data.user.avatar,
@@ -72,6 +75,7 @@ export const useUserStore = defineStore('user', {
     
     logout() {
       this.isLoggedIn = false
+      this.id = null
       this.email = ''
       this.nickname = ''
       this.avatar = ''
@@ -93,12 +97,14 @@ export const useUserStore = defineStore('user', {
         
         if (response.ok) {
           const data = await response.json()
+          this.id = data.user.id
           this.nickname = data.user.nickname
           this.avatar = data.user.avatar
           
           const userData = localStorage.getItem('user')
           if (userData) {
             const user = JSON.parse(userData)
+            user.id = data.user.id
             user.nickname = data.user.nickname
             user.avatar = data.user.avatar
             localStorage.setItem('user', JSON.stringify(user))
@@ -113,6 +119,7 @@ export const useUserStore = defineStore('user', {
       if (userData) {
         const user = JSON.parse(userData)
         this.isLoggedIn = user.isLoggedIn
+        this.id = user.id
         this.email = user.email
         this.nickname = user.nickname
         this.avatar = user.avatar || ''
