@@ -19,7 +19,7 @@ const router = createRouter({
       component: () => import('../views/Register.vue')
     },
     {
-      path: '/发布商品',
+      path: '/publish',
       name: 'publish',
       component: () => import('../views/Product发布.vue')
     }
