@@ -20,7 +20,7 @@ const toggleDropdown = () => {
 }
 
 const handlePublish = () => {
-  router.push('/发布商品')
+  router.push('/publish')
   isDropdownOpen.value = false
 }
 
