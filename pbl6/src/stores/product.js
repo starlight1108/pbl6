@@ -21,11 +21,13 @@ export const useProductStore = defineStore('product', {
       }
     },
     
-    async fetchProducts(page = 1, perPage = 20, category = null, keyword = null) {
+    async fetchProducts(page = 1, perPage = 20, category = null, keyword = null, sortBy = 'created_at', sortOrder = 'desc') {
       try {
         let url = `${API_BASE_URL}/products?page=${page}&per_page=${perPage}`
         if (category) url += `&category=${encodeURIComponent(category)}`
         if (keyword) url += `&keyword=${encodeURIComponent(keyword)}`
+        if (sortBy) url += `&sort_by=${encodeURIComponent(sortBy)}`
+        if (sortOrder) url += `&sort_order=${encodeURIComponent(sortOrder)}`
         
         const response = await fetch(url)
         const data = await response.json()
@@ -109,19 +111,22 @@ export const useProductStore = defineStore('product', {
     
     async toggleProductStatus(id, token) {
       try {
+        const product = this.products.find(p => p.id === id)
+        const newStatus = product?.status === 'active' ? 'inactive' : 'active'
+        
         const response = await fetch(`${API_BASE_URL}/products/${id}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
           },
-          body: JSON.stringify({ status: 'inactive' })
+          body: JSON.stringify({ status: newStatus })
         })
         
         if (response.ok) {
           const index = this.products.findIndex(p => p.id === id)
           if (index !== -1) {
-            this.products[index].status = this.products[index].status === 'active' ? 'inactive' : 'active'
+            this.products[index].status = newStatus
           }
           return true
         }
@@ -129,6 +134,42 @@ export const useProductStore = defineStore('product', {
       } catch (error) {
         console.error('更新商品状态失败:', error)
         return false
+      }
+    },
+    
+    async updateProduct(id, productData, token) {
+      try {
+        const formData = new FormData()
+        
+        if (productData.title) formData.append('title', productData.title)
+        if (productData.description) formData.append('description', productData.description)
+        if (productData.price) formData.append('price', productData.price)
+        if (productData.category) formData.append('category', productData.category)
+        if (productData.status) formData.append('status', productData.status)
+        if (productData.image) formData.append('image', productData.image)
+        
+        const response = await fetch(`${API_BASE_URL}/products/${id}`, {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          },
+          body: formData
+        })
+        
+        const data = await response.json()
+        
+        if (!response.ok) {
+          throw new Error(data.error || '更新商品失败')
+        }
+        
+        const index = this.products.findIndex(p => p.id === id)
+        if (index !== -1) {
+          this.products[index] = data.product
+        }
+        
+        return data.product
+      } catch (error) {
+        throw error
       }
     },
     
@@ -167,6 +208,115 @@ export const useProductStore = defineStore('product', {
         }
         
         return data
+      } catch (error) {
+        throw error
+      }
+    },
+    
+    async addFavorite(productId, token) {
+      try {
+        const response = await fetch(`${API_BASE_URL}/favorites`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ product_id: productId })
+        })
+        
+        const data = await response.json()
+        
+        if (!response.ok) {
+          throw new Error(data.error || '添加收藏失败')
+        }
+        
+        return data
+      } catch (error) {
+        throw error
+      }
+    },
+    
+    async removeFavorite(productId, token) {
+      try {
+        const response = await fetch(`${API_BASE_URL}/favorites/${productId}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        })
+        
+        const data = await response.json()
+        
+        if (!response.ok) {
+          throw new Error(data.error || '取消收藏失败')
+        }
+        
+        return data
+      } catch (error) {
+        throw error
+      }
+    },
+    
+    async checkFavorite(productId, token) {
+      try {
+        const response = await fetch(`${API_BASE_URL}/favorites/check/${productId}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        })
+        
+        const data = await response.json()
+        
+        if (!response.ok) {
+          throw new Error(data.error || '检查收藏状态失败')
+        }
+        
+        return data.is_favorite
+      } catch (error) {
+        return false
+      }
+    },
+    
+    async getFavorites(token) {
+      try {
+        const response = await fetch(`${API_BASE_URL}/favorites`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        })
+        
+        const data = await response.json()
+        console.log('Favorites API response:', data)
+        
+        if (!response.ok) {
+          const errorMsg = data.error || data.msg || '获取收藏列表失败'
+          if (errorMsg.includes('expired') || errorMsg.includes('过期')) {
+            throw new Error('token_expired')
+          }
+          throw new Error(errorMsg)
+        }
+        
+        if (!data.favorites || !Array.isArray(data.favorites)) {
+          return []
+        }
+        
+        return data.favorites.map(f => f.product).filter(p => p !== null)
+      } catch (error) {
+        console.error('Get favorites error:', error)
+        throw error
+      }
+    },
+    
+    async getCategories() {
+      try {
+        const response = await fetch(`${API_BASE_URL}/categories`)
+        const data = await response.json()
+        
+        if (!response.ok) {
+          throw new Error(data.error || '获取分类失败')
+        }
+        
+        return data.categories
       } catch (error) {
         throw error
       }
