@@ -52,3 +52,34 @@ def get_profile():
     return jsonify({
         'user': user.to_dict()
     })
+
+
+@api_bp.route('/user/profile', methods=['PUT'])
+@jwt_required()
+def update_profile():
+    user_id = int(get_jwt_identity())
+    user = User.query.get(user_id)
+
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+
+    if request.content_type and 'multipart/form-data' in request.content_type:
+        data = request.form
+    else:
+        data = request.get_json() or {}
+
+    if 'nickname' in data and data['nickname']:
+        user.nickname = data['nickname']
+
+    if 'avatar' in request.files:
+        file = request.files['avatar']
+        if file and file.filename and allowed_file(file.filename, current_app.config['ALLOWED_EXTENSIONS']):
+            filename = save_image(file, current_app.config['AVATAR_FOLDER'], max_size=(200, 200))
+            user.avatar = filename
+
+    db.session.commit()
+
+    return jsonify({
+        'message': 'Profile updated successfully',
+        'user': user.to_dict()
+    })

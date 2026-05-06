@@ -48,6 +48,11 @@ const handlePublish = () => {
   isDropdownOpen.value = false
 }
 
+const handleProfile = () => {
+  router.push('/profile')
+  isDropdownOpen.value = false
+}
+
 const handleDeleteProduct = async (id) => {
   if (confirm('确定要删除这个商品吗？')) {
     const success = await productStore.deleteProduct(id, userStore.token)
@@ -102,6 +107,7 @@ onMounted(async () => {
           <div class="dropdown">
             <button @click="toggleDropdown" class="dropdown-button">菜单</button>
             <div v-if="isDropdownOpen" class="dropdown-menu">
+              <button @click="handleProfile" class="dropdown-item profile-item">个人信息</button>
               <button @click="handlePublish" class="dropdown-item publish-item">发布商品</button>
               <button @click="handleLogout" class="dropdown-item logout-item">退出登录</button>
             </div>
@@ -120,7 +126,7 @@ onMounted(async () => {
       <div class="products-section">
         <h3>商品列表</h3>
         <div v-if="isLoading" class="loading">
-          加载中...
+          <p>加载中...</p>
         </div>
         <div v-else-if="productStore.products.length === 0" class="no-products">
           <p>暂无商品，快去发布第一个商品吧！</p>
@@ -135,16 +141,14 @@ onMounted(async () => {
               <div class="product-header">
                 <h4>{{ product.title }}</h4>
                 <div class="product-actions">
-                  <button v-if="userStore.isAdmin || product.seller_id === userStore.id" @click.stop="handleEditProduct(product.id)" class="edit-button">修改</button>
-                  <button v-if="userStore.isAdmin || product.seller_id === userStore.id" @click.stop="handleToggleProductStatus(product.id)" class="status-button">{{ product.status === 'active' ? '下架' : '上架' }}</button>
+                  <button v-if="userStore.id && product.seller_id === userStore.id" @click.stop="handleEditProduct(product.id)" class="edit-button">修改</button>
+                  <button v-if="userStore.id && product.seller_id === userStore.id" @click.stop="handleToggleProductStatus(product.id)" class="status-button">{{ product.status === 'active' ? '下架' : '上架' }}</button>
                   <button v-if="userStore.isAdmin" @click.stop="handleDeleteProduct(product.id)" class="delete-button">删除</button>
                 </div>
               </div>
               <p class="product-seller">卖家：{{ product.seller?.nickname || '匿名' }}</p>
               <p class="product-description">{{ product.description }}</p>
               <p class="product-price">¥{{ product.price?.toFixed(2) }}</p>
-              <p class="product-status" :class="{ 'inactive': product.status !== 'active' }">{{ product.status === 'active' ? '上架' : '下架' }}</p>
-              <p class="product-date">{{ new Date(product.created_at).toLocaleString() }}</p>
             </div>
           </div>
         </div>
@@ -255,6 +259,10 @@ onMounted(async () => {
   background-color: #f5f5f5;
 }
 
+.profile-item {
+  color: #2196F3;
+}
+
 .publish-item {
   color: #4CAF50;
 }
@@ -284,14 +292,7 @@ onMounted(async () => {
   margin-bottom: 20px;
 }
 
-.loading {
-  text-align: center;
-  padding: 40px;
-  color: #666;
-  font-size: 16px;
-}
-
-.no-products {
+.loading, .no-products {
   text-align: center;
   padding: 60px 20px;
   background-color: white;
@@ -311,6 +312,7 @@ onMounted(async () => {
   overflow: hidden;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   transition: transform 0.2s, box-shadow 0.2s;
+  cursor: pointer;
 }
 
 .product-card:hover {
@@ -407,21 +409,5 @@ onMounted(async () => {
   font-size: 18px;
   font-weight: bold;
   margin: 0;
-}
-
-.product-status {
-  color: #4CAF50;
-  font-size: 12px;
-  margin: 4px 0;
-}
-
-.product-status.inactive {
-  color: #f44336;
-}
-
-.product-date {
-  color: #999;
-  font-size: 12px;
-  margin: 4px 0;
 }
 </style>
