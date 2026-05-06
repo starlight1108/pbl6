@@ -44,7 +44,7 @@ const toggleDropdown = () => {
 }
 
 const handlePublish = () => {
-  router.push('/publish')
+  router.push('/products/publish')
   isDropdownOpen.value = false
 }
 
