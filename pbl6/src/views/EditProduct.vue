@@ -1,12 +1,15 @@
 <script setup>
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { useProductStore } from '../stores/product.js'
 import { useUserStore } from '../stores/user.js'
 
+const route = useRoute()
 const router = useRouter()
 const productStore = useProductStore()
 const userStore = useUserStore()
+
+const productId = parseInt(route.params.id)
 
 const formData = ref({
   title: '',
@@ -17,8 +20,10 @@ const formData = ref({
 
 const selectedFile = ref(null)
 const imagePreview = ref(null)
+const originalImage = ref(null)
 const categories = ['数码', '书籍', '服装', '生活用品', '运动', '其他']
 const errorMessage = ref('')
+const isLoading = ref(true)
 
 const handleFileChange = (event) => {
   const file = event.target.files[0]
@@ -32,13 +37,39 @@ const handleFileChange = (event) => {
   }
 }
 
+const loadProduct = async () => {
+  isLoading.value = true
+  try {
+    const response = await fetch(`http://127.0.0.1:5000/api/products/${productId}`)
+    const data = await response.json()
+    
+    if (data.product) {
+      formData.value = {
+        title: data.product.title,
+        description: data.product.description,
+        price: String(data.product.price),
+        category: data.product.category
+      }
+      originalImage.value = `http://127.0.0.1:5000${data.product.image}`
+      imagePreview.value = originalImage.value
+    } else {
+      throw new Error('商品不存在')
+    }
+  } catch (error) {
+    errorMessage.value = error.message
+    console.error('加载商品失败:', error)
+  } finally {
+    isLoading.value = false
+  }
+}
+
 const handleSubmit = async () => {
   if (!formData.value.title || !formData.value.price) {
     errorMessage.value = '请填写商品标题和价格'
     return
   }
   
-  if (isNaN(formData.value.price) || formData.value.price <= 0) {
+  if (isNaN(formData.value.price) || parseFloat(formData.value.price) <= 0) {
     errorMessage.value = '请输入有效的价格'
     return
   }
@@ -50,17 +81,18 @@ const handleSubmit = async () => {
   }
   
   try {
-    await productStore.addProduct({
-      name: formData.value.title,
+    await productStore.updateProduct(productId, {
+      title: formData.value.title,
       description: formData.value.description,
       price: parseFloat(formData.value.price),
       category: formData.value.category,
       image: selectedFile.value
     }, userStore.token)
     
+    alert('商品更新成功！')
     router.push('/')
   } catch (error) {
-    errorMessage.value = error.message || '发布失败，请重试'
+    errorMessage.value = error.message || '更新失败，请重试'
   }
 }
 
@@ -68,20 +100,28 @@ const goBack = () => {
   router.push('/')
 }
 
-if (!userStore.isLoggedIn) {
-  router.push('/login')
-}
+onMounted(() => {
+  if (!userStore.isLoggedIn) {
+    router.push('/login')
+    return
+  }
+  loadProduct()
+})
 </script>
 
 <template>
-  <div class="publish-container">
+  <div class="edit-container">
     <div class="header">
-      <h1>发布商品</h1>
+      <h1>编辑商品</h1>
       <button @click="goBack" class="back-button">返回</button>
     </div>
     
-    <div class="content">
-      <form @submit.prevent="handleSubmit" class="publish-form">
+    <div v-if="isLoading" class="loading">
+      加载中...
+    </div>
+    
+    <div v-else class="content">
+      <form @submit.prevent="handleSubmit" class="edit-form">
         <div class="form-group">
           <label for="title">商品标题 *</label>
           <input 
@@ -149,14 +189,14 @@ if (!userStore.isLoggedIn) {
           {{ errorMessage }}
         </div>
         
-        <button type="submit" class="submit-button">发布商品</button>
+        <button type="submit" class="submit-button">保存修改</button>
       </form>
     </div>
   </div>
 </template>
 
 <style scoped>
-.publish-container {
+.edit-container {
   min-height: 100vh;
   background-color: #f5f5f5;
 }
@@ -190,13 +230,19 @@ if (!userStore.isLoggedIn) {
   background-color: #555;
 }
 
+.loading {
+  text-align: center;
+  padding: 50px;
+  color: #666;
+}
+
 .content {
   max-width: 600px;
   margin: 20px auto;
   padding: 20px;
 }
 
-.publish-form {
+.edit-form {
   background-color: white;
   padding: 30px;
   border-radius: 8px;
@@ -308,9 +354,5 @@ textarea {
 
 .submit-button:hover {
   background-color: #45a049;
-}
-
-.submit-button:active {
-  background-color: #3d8b40;
 }
 </style>
