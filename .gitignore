@@ -44,10 +44,11 @@ var/
 .installed.cfg
 *.egg
 
-# # Database
-# *.db
-# *.sqlite
-# *.sqlite3
+# Database
+*.db
+*.sqlite
+*.sqlite3
+instance/
 
 # Environment variables
 .env
@@ -74,3 +75,4 @@ uploads/
 # OS
 Thumbs.db
 .DS_Store
+backend/database.db
