@@ -1,4 +1,5 @@
 import os
+from datetime import timedelta
 from dotenv import load_dotenv
 
 basedir = os.path.abspath(os.path.dirname(__file__))
@@ -19,6 +20,7 @@ def get_database_uri():
 class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY')
     JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY')
+    JWT_ACCESS_TOKEN_EXPIRES = timedelta(weeks=1)
     SQLALCHEMY_DATABASE_URI = get_database_uri()
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     CORS_ORIGINS = ['http://localhost:5173', 'http://localhost:5174']
