@@ -3,6 +3,7 @@ import { useUserStore } from '../stores/user.js'
 import { useProductStore } from '../stores/product.js'
 import { useRouter } from 'vue-router'
 import { ref, onMounted } from 'vue'
+import NotificationBell from '../components/NotificationBell.vue'
 
 const userStore = useUserStore()
 const productStore = useProductStore()
@@ -260,10 +261,12 @@ onMounted(async () => {
             <img :src="getAvatarUrl()" :alt="userStore.nickname" class="user-avatar">
             <span>欢迎，{{ userStore.nickname }}</span>
           </div>
+          <NotificationBell />
           <div class="dropdown">
             <button @click="toggleDropdown" class="dropdown-button">菜单</button>
             <div v-if="isDropdownOpen" class="dropdown-menu">
               <button @click="handleProfile" class="dropdown-item profile-item">个人信息</button>
+              <button @click="router.push('/notifications')" class="dropdown-item notification-item">消息通知</button>
               <button @click="handlePublish" class="dropdown-item publish-item">发布商品</button>
               <button @click="handleLogout" class="dropdown-item logout-item">退出登录</button>
             </div>
@@ -463,6 +466,10 @@ onMounted(async () => {
 
 .publish-item {
   color: #4CAF50;
+}
+
+.notification-item {
+  color: #2196F3;
 }
 
 .logout-item {
