@@ -18,16 +18,37 @@ def register_handlers(socketio):
     @socketio.on('authenticate', namespace='/chat')
     def handle_authenticate(data):
         user_id = data.get('user_id')
-        if user_id:
-            active_users[user_id] = request.sid
-            conversations = ChatConversation.query.filter(
-                db.or_(ChatConversation.buyer_id == user_id, ChatConversation.seller_id == user_id)
-            ).all()
-            for conv in conversations:
-                join_room(f'conversation_{conv.id}')
-            join_room(f'user_{user_id}')
-            emit('authenticated', {'user_id': user_id, 'online_users': list(active_users.keys())})
-            emit('user_status', {'user_id': user_id, 'status': 'online'}, broadcast=True, include_self=False)
+        token = data.get('token')
+
+        if not user_id or not token:
+            emit('auth_error', {'message': 'Missing user_id or token'})
+            return
+
+        try:
+            decoded = decode_token(token)
+            token_user_id = int(decoded['sub'])
+        except Exception:
+            emit('auth_error', {'message': 'Invalid or expired token'})
+            return
+
+        if token_user_id != int(user_id):
+            emit('auth_error', {'message': 'Token does not match user_id'})
+            return
+
+        user = User.query.get(int(user_id))
+        if not user:
+            emit('auth_error', {'message': 'User not found'})
+            return
+
+        active_users[int(user_id)] = request.sid
+        conversations = ChatConversation.query.filter(
+            db.or_(ChatConversation.buyer_id == int(user_id), ChatConversation.seller_id == int(user_id))
+        ).all()
+        for conv in conversations:
+            join_room(f'conversation_{conv.id}')
+        join_room(f'user_{int(user_id)}')
+        emit('authenticated', {'user_id': int(user_id), 'online_users': list(active_users.keys())})
+        emit('user_status', {'user_id': int(user_id), 'status': 'online'}, broadcast=True, include_self=False)
 
     @socketio.on('disconnect', namespace='/chat')
     def handle_disconnect():

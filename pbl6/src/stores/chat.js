@@ -85,6 +85,13 @@ export const useChatStore = defineStore('chat', {
       this.socket.on('error', (data) => {
         console.error('Socket error:', data.message)
       })
+
+      this.socket.on('auth_error', (data) => {
+        console.error('Socket auth error:', data.message)
+        this.socket.disconnect()
+        this.socket = null
+        this.isConnected = false
+      })
     },
 
     disconnectWebSocket() {
