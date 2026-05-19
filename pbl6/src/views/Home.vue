@@ -299,8 +299,7 @@ onMounted(async () => {
             <button @click="toggleDropdown" class="dropdown-button">菜单</button>
             <div v-if="isDropdownOpen" class="dropdown-menu">
               <button @click="handleProfile" class="dropdown-item profile-item">个人信息</button>
-              <button @click="router.push('/notifications')" class="dropdown-item notification-item">消息通知</button>
-              <button @click="handleChat" class="dropdown-item chat-item">消息</button>
+              <button @click="handleChat" class="dropdown-item chat-item">我的消息</button>
               <button @click="handlePublish" class="dropdown-item publish-item">发布商品</button>
               <button @click="handleLogout" class="dropdown-item logout-item">退出登录</button>
             </div>
