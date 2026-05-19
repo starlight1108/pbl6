@@ -31,24 +31,26 @@ def register_handlers(socketio):
             emit('auth_error', {'message': 'Invalid or expired token'})
             return
 
-        if token_user_id != int(user_id):
+        user_id_int = int(user_id)
+
+        if token_user_id != user_id_int:
             emit('auth_error', {'message': 'Token does not match user_id'})
             return
 
-        user = User.query.get(int(user_id))
+        user = User.query.get(user_id_int)
         if not user:
             emit('auth_error', {'message': 'User not found'})
             return
 
-        active_users[int(user_id)] = request.sid
+        active_users[user_id_int] = request.sid
         conversations = ChatConversation.query.filter(
-            db.or_(ChatConversation.buyer_id == int(user_id), ChatConversation.seller_id == int(user_id))
+            db.or_(ChatConversation.buyer_id == user_id_int, ChatConversation.seller_id == user_id_int)
         ).all()
         for conv in conversations:
             join_room(f'conversation_{conv.id}')
-        join_room(f'user_{int(user_id)}')
-        emit('authenticated', {'user_id': int(user_id), 'online_users': list(active_users.keys())})
-        emit('user_status', {'user_id': int(user_id), 'status': 'online'}, broadcast=True, include_self=False)
+        join_room(f'user_{user_id_int}')
+        emit('authenticated', {'user_id': user_id_int, 'online_users': list(active_users.keys())})
+        emit('user_status', {'user_id': user_id_int, 'status': 'online'}, broadcast=True, include_self=False)
 
     @socketio.on('disconnect', namespace='/chat')
     def handle_disconnect():
