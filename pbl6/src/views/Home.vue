@@ -68,6 +68,11 @@ const handleProfile = () => {
   isDropdownOpen.value = false
 }
 
+const handleChat = () => {
+  router.push('/chat')
+  isDropdownOpen.value = false
+}
+
 const handleDeleteProduct = async (id) => {
   if (confirm('确定要删除这个商品吗？')) {
     const success = await productStore.deleteProduct(id, userStore.token)
@@ -94,6 +99,34 @@ const handleToggleProductStatus = async (id) => {
 
 const handleViewDetail = (id) => {
   router.push(`/products/${id}`)
+}
+
+const handleContactSeller = async (product) => {
+  if (!userStore.token) return
+
+  try {
+    const response = await fetch('http://127.0.0.1:5000/api/conversations', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${userStore.token}`
+      },
+      body: JSON.stringify({
+        seller_id: product.seller_id,
+        product_id: product.id
+      })
+    })
+
+    const data = await response.json()
+
+    if (!response.ok) {
+      throw new Error(data.error || '创建会话失败')
+    }
+
+    router.push(`/chat/${data.conversation.id}`)
+  } catch (error) {
+    alert(error.message || '创建会话失败，请重试')
+  }
 }
 
 const parseSortOption = (option) => {
@@ -267,6 +300,7 @@ onMounted(async () => {
             <div v-if="isDropdownOpen" class="dropdown-menu">
               <button @click="handleProfile" class="dropdown-item profile-item">个人信息</button>
               <button @click="router.push('/notifications')" class="dropdown-item notification-item">消息通知</button>
+              <button @click="handleChat" class="dropdown-item chat-item">消息</button>
               <button @click="handlePublish" class="dropdown-item publish-item">发布商品</button>
               <button @click="handleLogout" class="dropdown-item logout-item">退出登录</button>
             </div>
@@ -350,6 +384,13 @@ onMounted(async () => {
               <p class="product-seller">卖家：{{ product.seller?.nickname || '匿名' }}</p>
               <p class="product-description">{{ product.description }}</p>
               <p class="product-price">¥{{ product.price?.toFixed(2) }}</p>
+              <button
+                v-if="userStore.isLoggedIn && userStore.id !== product.seller_id"
+                @click.stop="handleContactSeller(product)"
+                class="contact-seller-btn"
+              >
+                联系卖家
+              </button>
             </div>
           </div>
         </div>
@@ -462,6 +503,10 @@ onMounted(async () => {
 
 .profile-item {
   color: #2196F3;
+}
+
+.chat-item {
+  color: #FF9800;
 }
 
 .publish-item {
@@ -732,5 +777,22 @@ onMounted(async () => {
   font-size: 18px;
   font-weight: bold;
   margin: 0;
+}
+
+.contact-seller-btn {
+  width: 100%;
+  margin-top: 12px;
+  padding: 8px 16px;
+  background-color: #FF9800;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.contact-seller-btn:hover {
+  background-color: #F57C00;
 }
 </style>

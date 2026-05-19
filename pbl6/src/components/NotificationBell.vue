@@ -15,13 +15,16 @@ const toggleDropdown = () => {
   showDropdown.value = !showDropdown.value
 }
 
-const closeDropdown = () => {
-  showDropdown.value = false
+const handleClickOutside = (event) => {
+  const el = document.querySelector('.notification-bell')
+  if (el && !el.contains(event.target)) {
+    showDropdown.value = false
+  }
 }
 
 const goToNotifications = () => {
   router.push('/notifications')
-  closeDropdown()
+  showDropdown.value = false
 }
 
 const handleMarkAllRead = async () => {
@@ -62,15 +65,17 @@ onMounted(() => {
   if (userStore.isLoggedIn) {
     startPolling()
   }
+  document.addEventListener('click', handleClickOutside)
 })
 
 onUnmounted(() => {
   stopPolling()
+  document.removeEventListener('click', handleClickOutside)
 })
 </script>
 
 <template>
-  <div class="notification-bell" v-if="userStore.isLoggedIn" v-click-outside="closeDropdown">
+  <div class="notification-bell" v-if="userStore.isLoggedIn">
     <button @click="toggleDropdown" class="bell-button">
       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
