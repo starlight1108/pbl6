@@ -50,7 +50,7 @@ class TestCreateProduct:
         }, headers=auth_headers)
 
         assert response.status_code == 400
-        assert 'Missing required fields' in response.json['error']
+        assert 'Missing required field' in response.json['error']
 
     def test_create_product_missing_price(self, client, auth_headers):
         response = client.post('/api/products', json={
@@ -58,7 +58,7 @@ class TestCreateProduct:
         }, headers=auth_headers)
 
         assert response.status_code == 400
-        assert 'Missing required fields' in response.json['error']
+        assert 'Missing required field' in response.json['error']
 
     def test_create_product_default_category(self, client, auth_headers):
         response = client.post('/api/products', json={

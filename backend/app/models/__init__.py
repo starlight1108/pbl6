@@ -127,6 +127,78 @@ class Favorite(db.Model):
         }
 
 
+class ChatConversation(db.Model):
+    __tablename__ = 'chat_conversations'
+
+    id = db.Column(db.Integer, primary_key=True)
+    buyer_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    seller_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    product_id = db.Column(db.Integer, db.ForeignKey('products.id'), nullable=True)
+    last_message = db.Column(db.Text)
+    last_message_at = db.Column(db.DateTime)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    buyer = db.relationship('User', foreign_keys=[buyer_id])
+    seller = db.relationship('User', foreign_keys=[seller_id])
+    product = db.relationship('Product')
+
+    messages = db.relationship('ChatMessage', backref='conversation', lazy='dynamic',
+                                order_by='ChatMessage.created_at.asc()')
+
+    __table_args__ = (
+        db.UniqueConstraint('buyer_id', 'seller_id', 'product_id', name='_conv_participants_unique'),
+    )
+
+    def to_dict(self, current_user_id=None):
+        other_user = self.seller if self.buyer_id == current_user_id else self.buyer
+        unread_count = ChatMessage.query.filter_by(
+            conversation_id=self.id, sender_id=other_user.id, is_read=False
+        ).count() if current_user_id else 0
+
+        return {
+            'id': self.id,
+            'buyer_id': self.buyer_id,
+            'seller_id': self.seller_id,
+            'product_id': self.product_id,
+            'product_title': self.product.title if self.product else None,
+            'product_image': f'/static/products/{self.product.image}' if self.product and self.product.image else None,
+            'other_user': {
+                'id': other_user.id,
+                'nickname': other_user.nickname,
+                'avatar': f'/static/avatars/{other_user.avatar}' if other_user.avatar else '/static/images/default-avatar.png'
+            },
+            'last_message': self.last_message,
+            'last_message_at': self.last_message_at.isoformat() if self.last_message_at else None,
+            'unread_count': unread_count,
+            'created_at': self.created_at.isoformat()
+        }
+
+
+class ChatMessage(db.Model):
+    __tablename__ = 'chat_messages'
+
+    id = db.Column(db.Integer, primary_key=True)
+    conversation_id = db.Column(db.Integer, db.ForeignKey('chat_conversations.id'), nullable=False)
+    sender_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    content = db.Column(db.Text, nullable=False)
+    is_read = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    sender = db.relationship('User')
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'conversation_id': self.conversation_id,
+            'sender_id': self.sender_id,
+            'sender_nickname': self.sender.nickname if self.sender else None,
+            'sender_avatar': f'/static/avatars/{self.sender.avatar}' if self.sender and self.sender.avatar else '/static/images/default-avatar.png',
+            'content': self.content,
+            'is_read': self.is_read,
+            'created_at': self.created_at.isoformat()
+        }
+
+
 class Notification(db.Model):
     __tablename__ = 'notifications'
 

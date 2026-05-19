@@ -112,6 +112,34 @@ const deleteComment = async (commentId) => {
   }
 }
 
+const contactSeller = async () => {
+  if (!product.value || !userStore.token) return
+
+  try {
+    const response = await fetch('http://127.0.0.1:5000/api/conversations', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${userStore.token}`
+      },
+      body: JSON.stringify({
+        seller_id: product.value.seller_id,
+        product_id: product.value.id
+      })
+    })
+
+    const data = await response.json()
+
+    if (!response.ok) {
+      throw new Error(data.error || '创建会话失败')
+    }
+
+    router.push(`/chat/${data.conversation.id}`)
+  } catch (error) {
+    alert(error.message || '创建会话失败，请重试')
+  }
+}
+
 const formatDate = (dateString) => {
   const date = new Date(dateString)
   return date.toLocaleString('zh-CN', {
@@ -156,6 +184,10 @@ onMounted(() => {
           <p class="product-seller">卖家：{{ product.seller?.nickname || '未知' }}</p>
           <p class="product-date">发布时间：{{ formatDate(product.created_at) }}</p>
           <p class="product-description">{{ product.description }}</p>
+          
+          <div v-if="userStore.token && userStore.id !== product.seller_id" class="product-actions">
+            <button @click="contactSeller" class="contact-btn">联系卖家</button>
+          </div>
         </div>
       </div>
 
@@ -322,6 +354,28 @@ onMounted(() => {
   margin-top: 20px;
   padding-top: 20px;
   border-top: 1px solid #eee;
+}
+
+.product-actions {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #eee;
+}
+
+.contact-btn {
+  padding: 12px 32px;
+  background-color: #FF9800;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  font-weight: 500;
+}
+
+.contact-btn:hover {
+  background-color: #F57C00;
 }
 
 .comments-section {
