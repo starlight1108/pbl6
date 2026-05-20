@@ -182,6 +182,29 @@ def update_product(product_id):
     }), 200
 
 
+@api_bp.route('/products/<int:product_id>', methods=['DELETE'])
+@jwt_required()
+def delete_product(product_id):
+    product = Product.query.get(product_id)
+
+    if not product:
+        return jsonify({'error': 'Product not found'}), 404
+
+    user_id = int(get_jwt_identity())
+
+    if product.seller_id != user_id:
+        return jsonify({'error': 'You can only delete your own products'}), 403
+
+    from ..models import Comment, Favorite
+    Comment.query.filter_by(product_id=product_id).delete()
+    Favorite.query.filter_by(product_id=product_id).delete()
+
+    db.session.delete(product)
+    db.session.commit()
+
+    return jsonify({'message': 'Product deleted successfully'}), 200
+
+
 @api_bp.route('/products/<int:product_id>/comments', methods=['GET'])
 def get_product_comments(product_id):
     product = Product.query.get(product_id)

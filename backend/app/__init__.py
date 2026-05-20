@@ -28,7 +28,7 @@ def create_app(config_name='default'):
 
     db.init_app(app)
     jwt.init_app(app)
-    cors.init_app(app, supports_credentials=True)
+    cors.init_app(app, origins=app.config['CORS_ORIGINS'], supports_credentials=True)
     socketio.init_app(app, cors_allowed_origins='*', namespace='/chat')
 
     from . import models
