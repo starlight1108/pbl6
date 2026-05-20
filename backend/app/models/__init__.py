@@ -24,7 +24,7 @@ class User(db.Model):
 
     def to_dict(self):
         default_avatar = '/static/images/default-avatar.png'
-        avatar_url = f'/static/avatars/{self.avatar}' if self.avatar else default_avatar
+        avatar_url = f'/uploads/avatars/{self.avatar}' if self.avatar else default_avatar
 
         return {
             'id': self.id,
@@ -52,7 +52,7 @@ class Product(db.Model):
 
     def to_dict(self):
         default_image = '/static/images/default-product.png'
-        image_url = f'/static/products/{self.image}' if self.image else default_image
+        image_url = f'/uploads/products/{self.image}' if self.image else default_image
 
         seller_info = None
         if self.seller:
@@ -92,7 +92,7 @@ class Comment(db.Model):
             user_info = {
                 'id': self.user.id,
                 'nickname': self.user.nickname,
-                'avatar': f'/static/avatars/{self.user.avatar}' if self.user.avatar else '/static/images/default-avatar.png'
+                'avatar': f'/uploads/avatars/{self.user.avatar}' if self.user.avatar else '/static/images/default-avatar.png'
             }
         return {
             'id': self.id,
@@ -161,11 +161,11 @@ class ChatConversation(db.Model):
             'seller_id': self.seller_id,
             'product_id': self.product_id,
             'product_title': self.product.title if self.product else None,
-            'product_image': f'/static/products/{self.product.image}' if self.product and self.product.image else None,
+            'product_image': f'/uploads/products/{self.product.image}' if self.product and self.product.image else None,
             'other_user': {
                 'id': other_user.id,
                 'nickname': other_user.nickname,
-                'avatar': f'/static/avatars/{other_user.avatar}' if other_user.avatar else '/static/images/default-avatar.png'
+                'avatar': f'/uploads/avatars/{other_user.avatar}' if other_user.avatar else '/static/images/default-avatar.png'
             },
             'last_message': self.last_message,
             'last_message_at': self.last_message_at.isoformat() if self.last_message_at else None,
@@ -192,7 +192,7 @@ class ChatMessage(db.Model):
             'conversation_id': self.conversation_id,
             'sender_id': self.sender_id,
             'sender_nickname': self.sender.nickname if self.sender else None,
-            'sender_avatar': f'/static/avatars/{self.sender.avatar}' if self.sender and self.sender.avatar else '/static/images/default-avatar.png',
+            'sender_avatar': f'/uploads/avatars/{self.sender.avatar}' if self.sender and self.sender.avatar else '/static/images/default-avatar.png',
             'content': self.content,
             'is_read': self.is_read,
             'created_at': self.created_at.isoformat()

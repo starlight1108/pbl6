@@ -3,7 +3,8 @@ from datetime import timedelta
 from dotenv import load_dotenv
 
 basedir = os.path.abspath(os.path.dirname(__file__))
-load_dotenv(os.path.join(os.path.dirname(basedir), '.env'))
+backend_dir = os.path.dirname(basedir)
+load_dotenv(os.path.join(backend_dir, '.env'))
 
 
 def get_database_uri():
@@ -25,9 +26,10 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     CORS_ORIGINS = ['http://localhost:5173', 'http://localhost:5174']
     MAX_CONTENT_LENGTH = 5 * 1024 * 1024
-    AVATAR_FOLDER = os.path.join(basedir, 'static', 'avatars')
-    PRODUCT_FOLDER = os.path.join(basedir, 'static', 'products')
-    ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+    UPLOAD_FOLDER = os.path.join(backend_dir, 'uploads')
+    AVATAR_FOLDER = os.path.join(UPLOAD_FOLDER, 'avatars')
+    PRODUCT_FOLDER = os.path.join(UPLOAD_FOLDER, 'products')
+    ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'tiff', 'tif'}
 
 
 class DevelopmentConfig(Config):
@@ -43,6 +45,9 @@ class TestingConfig(Config):
     SECRET_KEY = 'test-secret-key'
     JWT_SECRET_KEY = 'test-jwt-secret'
     SQLALCHEMY_DATABASE_URI = 'sqlite:///:memory:'
+    UPLOAD_FOLDER = os.path.join(backend_dir, 'test_uploads')
+    AVATAR_FOLDER = os.path.join(UPLOAD_FOLDER, 'avatars')
+    PRODUCT_FOLDER = os.path.join(UPLOAD_FOLDER, 'products')
 
 
 config = {

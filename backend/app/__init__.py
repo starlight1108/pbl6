@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, send_from_directory
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 from flask_jwt_extended import JWTManager
@@ -22,9 +22,13 @@ def create_app(config_name='default'):
     os.makedirs(app.config['AVATAR_FOLDER'], exist_ok=True)
     os.makedirs(app.config['PRODUCT_FOLDER'], exist_ok=True)
 
+    @app.route('/uploads/<subfolder>/<path:filename>')
+    def serve_upload(subfolder, filename):
+        return send_from_directory(os.path.join(app.config['UPLOAD_FOLDER'], subfolder), filename)
+
     db.init_app(app)
     jwt.init_app(app)
-    cors.init_app(app, supports_credentials=True)
+    cors.init_app(app, origins=app.config['CORS_ORIGINS'], supports_credentials=True)
     socketio.init_app(app, cors_allowed_origins='*', namespace='/chat')
 
     from . import models

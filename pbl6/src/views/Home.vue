@@ -377,7 +377,7 @@ onMounted(async () => {
                 <div class="product-actions">
                   <button v-if="userStore.id && product.seller_id === userStore.id" @click.stop="handleEditProduct(product.id)" class="edit-button">修改</button>
                   <button v-if="userStore.id && product.seller_id === userStore.id" @click.stop="handleToggleProductStatus(product.id)" class="status-button">{{ product.status === 'active' ? '下架' : '上架' }}</button>
-                  <button v-if="userStore.isAdmin" @click.stop="handleDeleteProduct(product.id)" class="delete-button">删除</button>
+                  <button v-if="userStore.id && (product.seller_id === userStore.id || userStore.isAdmin)" @click.stop="handleDeleteProduct(product.id)" class="delete-button">删除</button>
                 </div>
               </div>
               <p class="product-seller">卖家：{{ product.seller?.nickname || '匿名' }}</p>

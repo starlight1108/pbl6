@@ -24,7 +24,7 @@ def upload_avatar():
         return jsonify({'error': 'No selected file'}), 400
 
     if not allowed_file(file.filename, current_app.config['ALLOWED_EXTENSIONS']):
-        return jsonify({'error': 'Invalid file type. Allowed: png, jpg, jpeg, gif'}), 400
+        return jsonify({'error': 'Invalid file type. Allowed: png, jpg, jpeg, gif, webp, bmp, tiff'}), 400
 
     try:
         filename = save_image(file, current_app.config['AVATAR_FOLDER'], max_size=(200, 200))
