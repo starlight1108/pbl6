@@ -2,16 +2,32 @@
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '../stores/user.js'
+import { useReportStore } from '../stores/report.js'
 
 const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
+const reportStore = useReportStore()
 
 const product = ref(null)
 const comments = ref([])
 const newComment = ref('')
 const isLoading = ref(true)
 const isSubmitting = ref(false)
+const showReportModal = ref(false)
+const reportReason = ref('')
+const reportDescription = ref('')
+const isReporting = ref(false)
+const hasReported = ref(false)
+
+const reportReasons = [
+  '虚假信息',
+  '违禁商品',
+  '欺诈行为',
+  '侵犯权益',
+  '不当内容',
+  '其他原因'
+]
 
 const fetchProduct = async () => {
   const productId = route.params.id
@@ -20,6 +36,7 @@ const fetchProduct = async () => {
     const data = await response.json()
     if (data.product) {
       product.value = data.product
+      checkReportStatus()
     } else {
       alert('商品不存在')
       router.push('/')
@@ -123,6 +140,57 @@ const formatDate = (dateString) => {
   })
 }
 
+const openReportModal = () => {
+  if (!userStore.isLoggedIn) {
+    alert('请先登录')
+    router.push('/login')
+    return
+  }
+  showReportModal.value = true
+}
+
+const closeReportModal = () => {
+  showReportModal.value = false
+  reportReason.value = ''
+  reportDescription.value = ''
+}
+
+const submitReport = async () => {
+  if (!reportReason.value) {
+    alert('请选择举报原因')
+    return
+  }
+  
+  if (isReporting.value) return
+  
+  isReporting.value = true
+  
+  try {
+    await reportStore.createReport(
+      product.value.id,
+      reportReason.value,
+      reportDescription.value
+    )
+    alert('举报成功，我们会尽快处理')
+    hasReported.value = true
+    closeReportModal()
+  } catch (error) {
+    alert(error.message || '举报失败')
+  } finally {
+    isReporting.value = false
+  }
+}
+
+const checkReportStatus = async () => {
+  if (userStore.isLoggedIn && product.value) {
+    try {
+      hasReported.value = await reportStore.checkReported(product.value.id)
+    } catch (error) {
+      console.error('检查举报状态失败:', error)
+    }
+  }
+}
+
 onMounted(() => {
   fetchProduct()
   fetchComments()
@@ -156,6 +224,56 @@ onMounted(() => {
           <p class="product-seller">卖家：{{ product.seller?.nickname || '未知' }}</p>
           <p class="product-date">发布时间：{{ formatDate(product.created_at) }}</p>
           <p class="product-description">{{ product.description }}</p>
+          
+          <div class="product-actions">
+            <button 
+              v-if="userStore.isLoggedIn && product.seller?.id !== userStore.userId" 
+              @click="openReportModal" 
+              :disabled="hasReported"
+              class="report-button"
+            >
+              {{ hasReported ? '已举报' : '举报商品' }}
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      <div v-if="showReportModal" class="modal-overlay" @click.self="closeReportModal">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h3>举报商品</h3>
+            <button @click="closeReportModal" class="close-btn">×</button>
+          </div>
+          <div class="modal-body">
+            <div class="form-group">
+              <label>举报原因 <span class="required">*</span></label>
+              <select v-model="reportReason" class="form-select">
+                <option value="">请选择举报原因</option>
+                <option v-for="reason in reportReasons" :key="reason" :value="reason">
+                  {{ reason }}
+                </option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>详细说明</label>
+              <textarea 
+                v-model="reportDescription" 
+                placeholder="请详细描述举报原因（选填）"
+                maxlength="500"
+                class="form-textarea"
+              ></textarea>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button @click="closeReportModal" class="cancel-btn">取消</button>
+            <button 
+              @click="submitReport" 
+              :disabled="!reportReason || isReporting" 
+              class="submit-btn"
+            >
+              {{ isReporting ? '提交中...' : '提交举报' }}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -443,5 +561,158 @@ onMounted(() => {
   line-height: 1.5;
   margin: 0;
   padding-left: 52px;
+}
+
+.product-actions {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #eee;
+}
+
+.report-button {
+  padding: 10px 20px;
+  background-color: #ff9800;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.3s;
+}
+
+.report-button:hover:not(:disabled) {
+  background-color: #f57c00;
+}
+
+.report-button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background-color: white;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 20px;
+  border-bottom: 1px solid #eee;
+}
+
+.modal-header h3 {
+  margin: 0;
+  color: #333;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #999;
+}
+
+.close-btn:hover {
+  color: #333;
+}
+
+.modal-body {
+  padding: 20px;
+}
+
+.form-group {
+  margin-bottom: 15px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  color: #333;
+  font-weight: bold;
+}
+
+.required {
+  color: #f44336;
+}
+
+.form-select {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+.form-textarea {
+  width: 100%;
+  min-height: 100px;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  resize: vertical;
+  box-sizing: border-box;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 15px 20px;
+  border-top: 1px solid #eee;
+}
+
+.cancel-btn {
+  padding: 10px 20px;
+  background-color: #f5f5f5;
+  color: #333;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.cancel-btn:hover {
+  background-color: #e0e0e0;
+}
+
+.submit-btn {
+  padding: 10px 20px;
+  background-color: #ff9800;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.submit-btn:hover:not(:disabled) {
+  background-color: #f57c00;
+}
+
+.submit-btn:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
 }
 </style>

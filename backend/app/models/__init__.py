@@ -154,3 +154,45 @@ class Notification(db.Model):
             'is_read': self.is_read,
             'created_at': self.created_at.isoformat()
         }
+
+
+class Report(db.Model):
+    __tablename__ = 'reports'
+
+    id = db.Column(db.Integer, primary_key=True)
+    product_id = db.Column(db.Integer, db.ForeignKey('products.id'), nullable=False)
+    reporter_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    reason = db.Column(db.String(50), nullable=False)
+    description = db.Column(db.Text)
+    status = db.Column(db.String(20), default='pending')
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    product = db.relationship('Product')
+    reporter = db.relationship('User')
+
+    def to_dict(self):
+        product_info = None
+        if self.product:
+            product_info = {
+                'id': self.product.id,
+                'title': self.product.title,
+                'seller_id': self.product.seller_id
+            }
+        
+        reporter_info = None
+        if self.reporter:
+            reporter_info = {
+                'id': self.reporter.id,
+                'nickname': self.reporter.nickname
+            }
+        
+        return {
+            'id': self.id,
+            'product_id': self.product_id,
+            'product': product_info,
+            'reporter': reporter_info,
+            'reason': self.reason,
+            'description': self.description,
+            'status': self.status,
+            'created_at': self.created_at.isoformat()
+        }

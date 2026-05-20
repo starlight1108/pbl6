@@ -10,10 +10,10 @@ def register():
     data = request.get_json()
 
     if not all(k in data for k in ['email', 'password']):
-        return jsonify({'error': 'Missing required fields: email, password'}), 400
+        return jsonify({'error': '请填写邮箱和密码'}), 400
 
     if User.query.filter_by(email=data['email']).first():
-        return jsonify({'error': 'Email already registered'}), 409
+        return jsonify({'error': '该邮箱已被注册'}), 409
 
     user = User(
         email=data['email'],
@@ -25,7 +25,7 @@ def register():
     db.session.commit()
 
     return jsonify({
-        'message': 'Registration successful',
+        'message': '注册成功',
         'user': user.to_dict()
     }), 201
 
@@ -35,17 +35,17 @@ def login():
     data = request.get_json()
 
     if not all(k in data for k in ['email', 'password']):
-        return jsonify({'error': 'Missing email or password'}), 400
+        return jsonify({'error': '请填写邮箱和密码'}), 400
 
     user = User.query.filter_by(email=data['email']).first()
 
     if not user or not user.check_password(data['password']):
-        return jsonify({'error': 'Invalid email or password'}), 401
+        return jsonify({'error': '邮箱或密码错误'}), 401
 
     access_token = create_access_token(identity=str(user.id))
 
     return jsonify({
-        'message': 'Login successful',
+        'message': '登录成功',
         'user': user.to_dict(),
         'access_token': access_token
     })
