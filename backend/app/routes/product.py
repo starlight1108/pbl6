@@ -206,12 +206,13 @@ def delete_product(product_id):
     if product.seller_id != user_id:
         return jsonify({'error': 'You can only delete your own products'}), 403
 
+    Comment.query.filter_by(product_id=product_id).delete()
+    Favorite.query.filter_by(product_id=product_id).delete()
+
     db.session.delete(product)
     db.session.commit()
 
-    return jsonify({
-        'message': 'Product deleted successfully'
-    }), 200
+    return jsonify({'message': 'Product deleted successfully'}), 200
 
 
 @api_bp.route('/products/<int:product_id>/comments', methods=['GET'])

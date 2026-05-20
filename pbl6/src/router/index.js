@@ -29,6 +29,11 @@ const router = createRouter({
       component: () => import('../views/PublishProduct.vue')
     },
     {
+      path: '/products/:id/edit',
+      name: 'product-edit',
+      component: () => import('../views/EditProduct.vue')
+    },
+    {
       path: '/products/:id',
       name: 'product-detail',
       component: () => import('../views/ProductDetail.vue')
@@ -47,6 +52,21 @@ const router = createRouter({
       path: '/products/edit/:id',
       name: 'edit-product',
       component: () => import('../views/EditProduct.vue')
+    },
+    {
+      path: '/notifications',
+      name: 'notifications',
+      component: () => import('../views/Notifications.vue')
+    },
+    {
+      path: '/chat',
+      name: 'chat',
+      component: () => import('../views/ChatConversations.vue')
+    },
+    {
+      path: '/chat/:id',
+      name: 'chat-room',
+      component: () => import('../views/ChatRoom.vue')
     }
   ],
 })

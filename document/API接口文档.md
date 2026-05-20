@@ -146,11 +146,11 @@
 
 | 参数名 | 类型 | 必填 | 说明 |
 |--------|------|------|------|
-| avatar | file | 是 | 图片文件 (png/jpg/jpeg/gif) |
+| avatar | file | 是 | 图片文件 (png/jpg/jpeg/gif/webp/bmp/tiff) |
 
 **限制说明：**
 - 文件大小：最大 5MB
-- 支持格式：`png`, `jpg`, `jpeg`, `gif`
+- 支持格式：`png`, `jpg`, `jpeg`, `gif`, `webp`, `bmp`, `tiff`
 - 自动缩放：最大 200x200 像素
 
 **成功响应 (200)：**

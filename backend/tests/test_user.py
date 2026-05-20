@@ -27,7 +27,7 @@ class TestUserAvatar:
         assert response.status_code == 200
         assert response.json['message'] == 'Avatar uploaded successfully'
         assert 'default-avatar.png' not in response.json['user']['avatar']
-        assert '/static/avatars/' in response.json['user']['avatar']
+        assert '/uploads/avatars/' in response.json['user']['avatar']
 
     def test_upload_avatar_no_file(self, client, auth_headers):
         response = client.post(

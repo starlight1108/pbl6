@@ -3,6 +3,7 @@ import { useUserStore } from '../stores/user.js'
 import { useProductStore } from '../stores/product.js'
 import { useRouter } from 'vue-router'
 import { ref, onMounted } from 'vue'
+import NotificationBell from '../components/NotificationBell.vue'
 
 const userStore = useUserStore()
 const productStore = useProductStore()
@@ -18,10 +19,10 @@ const sortOrder = ref('desc')
 const showFavoritesOnly = ref(false)
 
 const sortOptions = [
-  { value: 'created_at', label: '最新发布' },
+  { value: 'created_at', label: '最新发�? },
   { value: 'price_asc', label: '价格从低到高' },
   { value: 'price_desc', label: '价格从高到低' },
-  { value: 'title', label: '按名称排序' }
+  { value: 'title', label: '按名称排�? }
 ]
 
 const getAvatarUrl = () => {
@@ -72,11 +73,16 @@ const handleMyProducts = () => {
   isDropdownOpen.value = false
 }
 
+const handleChat = () => {
+  router.push('/chat')
+  isDropdownOpen.value = false
+}
+
 const handleDeleteProduct = async (id) => {
-  if (confirm('确定要删除这个商品吗？')) {
+  if (confirm('确定要删除这个商品吗�?)) {
     const success = await productStore.deleteProduct(id, userStore.token)
     if (success) {
-      alert('商品删除成功！')
+      alert('商品删除成功�?)
     } else {
       alert('删除失败，请重试')
     }
@@ -98,6 +104,34 @@ const handleToggleProductStatus = async (id) => {
 
 const handleViewDetail = (id) => {
   router.push(`/products/${id}`)
+}
+
+const handleContactSeller = async (product) => {
+  if (!userStore.token) return
+
+  try {
+    const response = await fetch('http://127.0.0.1:5000/api/conversations', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${userStore.token}`
+      },
+      body: JSON.stringify({
+        seller_id: product.seller_id,
+        product_id: product.id
+      })
+    })
+
+    const data = await response.json()
+
+    if (!response.ok) {
+      throw new Error(data.error || '创建会话失败')
+    }
+
+    router.push(`/chat/${data.conversation.id}`)
+  } catch (error) {
+    alert(error.message || '创建会话失败，请重试')
+  }
 }
 
 const parseSortOption = (option) => {
@@ -129,7 +163,7 @@ const handleCategoryChange = async () => {
     const sort = parseSortOption(sortBy.value)
     await productStore.fetchProducts(1, 20, selectedCategory.value || null, searchKeyword.value, sort.sortBy, sort.sortOrder)
   } catch (error) {
-    console.error('筛选商品失败:', error)
+    console.error('筛选商品失�?', error)
   } finally {
     isLoading.value = false
   }
@@ -157,7 +191,7 @@ const toggleShowFavorites = async () => {
     }
     
     if (!userStore.token) {
-      alert('登录状态失效，请重新登录')
+      alert('登录状态失效，请重新登�?)
       router.push('/login')
       return
     }
@@ -181,11 +215,11 @@ const toggleShowFavorites = async () => {
     console.error('获取收藏列表失败:', error)
     
     if (error.message === 'token_expired' || error.message.includes('expired')) {
-      alert('登录已过期，请重新登录')
+      alert('登录已过期，请重新登�?)
       userStore.logout()
       router.push('/login')
     } else if (error.message.includes('token') || error.message.includes('认证')) {
-      alert('登录状态失效，请重新登录')
+      alert('登录状态失效，请重新登�?)
       userStore.logout()
       router.push('/login')
     } else {
@@ -209,7 +243,7 @@ const toggleFavorite = async (productId) => {
     if (favoriteStatus.value[productId]) {
       await productStore.removeFavorite(productId, userStore.token)
       favoriteStatus.value[productId] = false
-      alert('已取消收藏')
+      alert('已取消收�?)
     } else {
       await productStore.addFavorite(productId, userStore.token)
       favoriteStatus.value[productId] = true
@@ -248,7 +282,7 @@ onMounted(async () => {
     ])
     await checkFavoriteStatus()
   } catch (error) {
-    console.error('初始化失败:', error)
+    console.error('初始化失�?', error)
   } finally {
     isLoading.value = false
   }
@@ -265,13 +299,15 @@ onMounted(async () => {
             <img :src="getAvatarUrl()" :alt="userStore.nickname" class="user-avatar">
             <span>欢迎，{{ userStore.nickname }}</span>
           </div>
+          <NotificationBell />
           <div class="dropdown">
             <button @click="toggleDropdown" class="dropdown-button">菜单</button>
             <div v-if="isDropdownOpen" class="dropdown-menu">
               <button @click="handleProfile" class="dropdown-item profile-item">个人信息</button>
-              <button @click="handleMyProducts" class="dropdown-item my-products-item">我发布的</button>
+<button @click="handleMyProducts" class="dropdown-item my-products-item">我发布的</button>
+              <button @click="handleChat" class="dropdown-item chat-item">我的消息</button>
               <button @click="handlePublish" class="dropdown-item publish-item">发布商品</button>
-              <button @click="handleLogout" class="dropdown-item logout-item">退出登录</button>
+              <button @click="handleLogout" class="dropdown-item logout-item">退出登�?/button>
             </div>
           </div>
         </template>
@@ -283,7 +319,7 @@ onMounted(async () => {
     
     <div class="content">
       <h2>首页</h2>
-      <p>这里是二手校园交易平台的首页，您可以在这里浏览和发布二手商品。</p>
+      <p>这里是二手校园交易平台的首页，您可以在这里浏览和发布二手商品�?/p>
       
       <div class="search-section">
         <div class="search-bar">
@@ -315,14 +351,14 @@ onMounted(async () => {
           class="favorites-button"
           :class="{ 'active': showFavoritesOnly }"
         >
-          ♥ 我的收藏
+          �?我的收藏
         </button>
       </div>
       
       <div class="products-section">
         <h3>商品列表</h3>
         <div v-if="isLoading" class="loading">
-          <p>加载中...</p>
+          <p>加载�?..</p>
         </div>
         <div v-else-if="productStore.products.length === 0" class="no-products">
           <p>暂无收藏商品，快去收藏心仪的商品吧！</p>
@@ -338,7 +374,7 @@ onMounted(async () => {
                 class="favorite-button"
                 :class="{ 'favorited': favoriteStatus[product.id] }"
               >
-                ♥
+                �?
               </button>
             </div>
             <div class="product-info">
@@ -347,12 +383,19 @@ onMounted(async () => {
                 <div class="product-actions">
                   <button v-if="userStore.id && product.seller_id === userStore.id" @click.stop="handleEditProduct(product.id)" class="edit-button">修改</button>
                   <button v-if="userStore.id && product.seller_id === userStore.id" @click.stop="handleToggleProductStatus(product.id)" class="status-button">{{ product.status === 'active' ? '下架' : '上架' }}</button>
-                  <button v-if="userStore.isAdmin" @click.stop="handleDeleteProduct(product.id)" class="delete-button">删除</button>
+                  <button v-if="userStore.id && (product.seller_id === userStore.id || userStore.isAdmin)" @click.stop="handleDeleteProduct(product.id)" class="delete-button">删除</button>
                 </div>
               </div>
               <p class="product-seller">卖家：{{ product.seller?.nickname || '匿名' }}</p>
               <p class="product-description">{{ product.description }}</p>
               <p class="product-price">¥{{ product.price?.toFixed(2) }}</p>
+              <button
+                v-if="userStore.isLoggedIn && userStore.id !== product.seller_id"
+                @click.stop="handleContactSeller(product)"
+                class="contact-seller-btn"
+              >
+                联系卖家
+              </button>
             </div>
           </div>
         </div>
@@ -467,12 +510,17 @@ onMounted(async () => {
   color: #2196F3;
 }
 
-.my-products-item {
+.my-products-item,
+.chat-item {
   color: #FF9800;
 }
 
 .publish-item {
   color: #4CAF50;
+}
+
+.notification-item {
+  color: #2196F3;
 }
 
 .logout-item {
@@ -735,5 +783,22 @@ onMounted(async () => {
   font-size: 18px;
   font-weight: bold;
   margin: 0;
+}
+
+.contact-seller-btn {
+  width: 100%;
+  margin-top: 12px;
+  padding: 8px 16px;
+  background-color: #FF9800;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.contact-seller-btn:hover {
+  background-color: #F57C00;
 }
 </style>
