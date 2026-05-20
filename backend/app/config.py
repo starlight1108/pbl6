@@ -29,7 +29,7 @@ class Config:
     UPLOAD_FOLDER = os.path.join(backend_dir, 'uploads')
     AVATAR_FOLDER = os.path.join(UPLOAD_FOLDER, 'avatars')
     PRODUCT_FOLDER = os.path.join(UPLOAD_FOLDER, 'products')
-    ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+    ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'tiff', 'tif'}
 
 
 class DevelopmentConfig(Config):
@@ -45,6 +45,9 @@ class TestingConfig(Config):
     SECRET_KEY = 'test-secret-key'
     JWT_SECRET_KEY = 'test-jwt-secret'
     SQLALCHEMY_DATABASE_URI = 'sqlite:///:memory:'
+    UPLOAD_FOLDER = os.path.join(backend_dir, 'test_uploads')
+    AVATAR_FOLDER = os.path.join(UPLOAD_FOLDER, 'avatars')
+    PRODUCT_FOLDER = os.path.join(UPLOAD_FOLDER, 'products')
 
 
 config = {

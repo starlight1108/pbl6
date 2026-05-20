@@ -121,7 +121,7 @@ onMounted(() => {
             <input type="file" accept="image/*" @change="handleAvatarChange" class="file-input">
             上传头像
           </label>
-          <p class="hint">支持 png, jpg, jpeg, gif 格式</p>
+          <p class="hint">支持 png, jpg, jpeg, gif, webp, bmp, tiff 格式</p>
         </div>
       </div>
 
