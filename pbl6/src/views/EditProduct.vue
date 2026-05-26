@@ -21,7 +21,7 @@ const formData = ref({
 const selectedFile = ref(null)
 const imagePreview = ref(null)
 const originalImage = ref(null)
-const categories = ['数码', '书籍', '服装', '生活用品', '运动', '其他']
+const categories = ['书籍教材', '电子数码', '生活用品', '交通工具', '体育用品', '服饰鞋包', '美妆护肤', '其他']
 const errorMessage = ref('')
 const isLoading = ref(true)
 

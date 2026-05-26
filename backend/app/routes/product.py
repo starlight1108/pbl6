@@ -378,13 +378,12 @@ def check_favorite(product_id):
     }), 200
 
 
+CATEGORIES = ['书籍教材', '电子数码', '生活用品', '交通工具', '体育用品', '服饰鞋包', '美妆护肤', '其他']
+
 @api_bp.route('/categories', methods=['GET'])
 def get_categories():
-    categories = Product.query.with_entities(Product.category).distinct().all()
-    category_list = [cat[0] for cat in categories]
-    
     return jsonify({
-        'categories': category_list
+        'categories': CATEGORIES
     }), 200
 
 
@@ -490,11 +489,15 @@ def get_seller_offers():
 def get_buyer_offers():
     buyer_id = int(get_jwt_identity())
     status = request.args.get('status')
+    product_id = request.args.get('product_id', type=int)
     
     query = Offer.query.filter_by(buyer_id=buyer_id)
     
     if status:
         query = query.filter_by(status=status)
+    
+    if product_id:
+        query = query.filter_by(product_id=product_id)
     
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 20, type=int)

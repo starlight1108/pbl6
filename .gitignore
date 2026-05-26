@@ -77,3 +77,5 @@ uploads/
 Thumbs.db
 .DS_Store
 backend/database.db
+document/测试用例.xlsx
+document/测试用例文档.md
