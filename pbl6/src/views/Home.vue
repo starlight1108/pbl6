@@ -63,6 +63,11 @@ const handlePublish = () => {
   isDropdownOpen.value = false
 }
 
+const handleMyProducts = () => {
+  router.push('/my-products')
+  isDropdownOpen.value = false
+}
+
 const handleProfile = () => {
   router.push('/profile')
   isDropdownOpen.value = false
@@ -302,6 +307,7 @@ onMounted(async () => {
               <button @click="router.push('/notifications')" class="dropdown-item notification-item">消息通知</button>
               <button @click="router.push('/reports')" class="dropdown-item report-item">我的举报</button>
               <button @click="handleChat" class="dropdown-item chat-item">我的消息</button>
+              <button @click="handleMyProducts" class="dropdown-item my-products-item">我发布的</button>
               <button @click="handlePublish" class="dropdown-item publish-item">发布商品</button>
               <button @click="handleLogout" class="dropdown-item logout-item">退出登录</button>
             </div>
@@ -512,6 +518,10 @@ onMounted(async () => {
 
 .publish-item {
   color: #4CAF50;
+}
+
+.my-products-item {
+  color: #FF9800;
 }
 
 .notification-item {

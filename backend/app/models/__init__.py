@@ -264,3 +264,37 @@ class Report(db.Model):
             'handled_at': self.handled_at.isoformat() if self.handled_at else None,
             'created_at': self.created_at.isoformat()
         }
+
+
+class Offer(db.Model):
+    __tablename__ = 'offers'
+
+    id = db.Column(db.Integer, primary_key=True)
+    product_id = db.Column(db.Integer, db.ForeignKey('products.id'), nullable=False)
+    buyer_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    original_price = db.Column(db.Numeric(10, 2), nullable=False)
+    offered_price = db.Column(db.Numeric(10, 2), nullable=False)
+    message = db.Column(db.Text)
+    status = db.Column(db.String(20), default='pending')
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    product = db.relationship('Product')
+    buyer = db.relationship('User')
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'product_id': self.product_id,
+            'product': self.product.to_dict() if self.product else None,
+            'buyer_id': self.buyer_id,
+            'buyer': {
+                'id': self.buyer.id,
+                'nickname': self.buyer.nickname,
+                'avatar': f'/uploads/avatars/{self.buyer.avatar}' if self.buyer.avatar else '/static/images/default-avatar.png'
+            } if self.buyer else None,
+            'original_price': float(self.original_price) if self.original_price else None,
+            'offered_price': float(self.offered_price) if self.offered_price else None,
+            'message': self.message,
+            'status': self.status,
+            'created_at': self.created_at.isoformat()
+        }
