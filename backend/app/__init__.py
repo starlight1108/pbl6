@@ -30,7 +30,6 @@ def create_app(config_name='default'):
     jwt.init_app(app)
     cors.init_app(app, origins=app.config['CORS_ORIGINS'], supports_credentials=True)
     socketio.init_app(app, cors_allowed_origins='*', namespace='/chat')
-
     from . import models
     from .routes import api_bp
     app.register_blueprint(api_bp, url_prefix='/api')

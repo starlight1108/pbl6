@@ -1,8 +1,9 @@
 from flask import request, jsonify, current_app
 from flask_jwt_extended import jwt_required, get_jwt_identity
+from datetime import datetime
 from . import api_bp
 from .. import db
-from ..models import Product, User, Comment, Favorite
+from ..models import Product, User, Comment, Favorite, Offer
 from ..utils import allowed_file, save_image
 
 
@@ -88,8 +89,18 @@ def get_products():
     keyword = request.args.get('keyword')
     sort_by = request.args.get('sort_by', 'created_at')
     sort_order = request.args.get('sort_order', 'desc')
+    seller_id = request.args.get('seller_id', type=int)
+    status = request.args.get('status')
 
-    query = Product.query.filter_by(status='active')
+    query = Product.query
+
+    if seller_id:
+        query = query.filter_by(seller_id=seller_id)
+    
+    if status:
+        query = query.filter_by(status=status)
+    elif not seller_id:
+        query = query.filter_by(status='active')
 
     if category:
         query = query.filter_by(category=category)
@@ -195,7 +206,6 @@ def delete_product(product_id):
     if product.seller_id != user_id:
         return jsonify({'error': 'You can only delete your own products'}), 403
 
-    from ..models import Comment, Favorite
     Comment.query.filter_by(product_id=product_id).delete()
     Favorite.query.filter_by(product_id=product_id).delete()
 
@@ -375,4 +385,203 @@ def get_categories():
     
     return jsonify({
         'categories': category_list
+    }), 200
+
+
+@api_bp.route('/offers', methods=['POST'])
+@jwt_required()
+def create_offer():
+    user_id = int(get_jwt_identity())
+    data = request.get_json() or {}
+    
+    if 'product_id' not in data:
+        return jsonify({'error': 'Missing product_id'}), 400
+    
+    if 'offered_price' not in data:
+        return jsonify({'error': 'Missing offered_price'}), 400
+    
+    product_id = data['product_id']
+    product = Product.query.get(product_id)
+    
+    if not product:
+        return jsonify({'error': 'Product not found'}), 404
+    
+    if product.seller_id == user_id:
+        return jsonify({'error': 'You cannot make an offer on your own product'}), 400
+    
+    if product.status != 'active':
+        return jsonify({'error': 'Product is not available'}), 400
+    
+    try:
+        offered_price = float(data['offered_price'])
+    except ValueError:
+        return jsonify({'error': 'Invalid price format'}), 400
+    
+    if offered_price <= 0:
+        return jsonify({'error': 'Offered price must be positive'}), 400
+    
+    existing_offer = Offer.query.filter_by(product_id=product_id, buyer_id=user_id).first()
+    
+    if existing_offer:
+        if existing_offer.status == 'pending':
+            return jsonify({'error': 'You already have a pending offer for this product'}), 400
+        else:
+            # 更新已完成的议价为新的议价请求
+            existing_offer.offered_price = offered_price
+            existing_offer.original_price = product.price
+            existing_offer.status = 'pending'
+            existing_offer.message = data.get('message', '')
+            existing_offer.updated_at = datetime.utcnow()
+            db.session.commit()
+            return jsonify({
+                'message': 'Offer updated successfully',
+                'offer': existing_offer.to_dict()
+            }), 200
+    
+    offer = Offer(
+        product_id=product_id,
+        buyer_id=user_id,
+        seller_id=product.seller_id,
+        offered_price=offered_price,
+        original_price=product.price,
+        message=data.get('message', '')
+    )
+    
+    db.session.add(offer)
+    db.session.commit()
+    
+    return jsonify({
+        'message': 'Offer created successfully',
+        'offer': offer.to_dict()
+    }), 201
+
+
+@api_bp.route('/offers/seller', methods=['GET'])
+@jwt_required()
+def get_seller_offers():
+    seller_id = int(get_jwt_identity())
+    status = request.args.get('status', 'pending')
+    product_id = request.args.get('product_id', type=int)
+    
+    query = Offer.query.filter_by(seller_id=seller_id)
+    
+    if status:
+        query = query.filter_by(status=status)
+    
+    if product_id:
+        query = query.filter_by(product_id=product_id)
+    
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 20, type=int)
+    
+    pagination = query.order_by(Offer.created_at.desc())\
+        .paginate(page=page, per_page=per_page, error_out=False)
+    
+    return jsonify({
+        'offers': [o.to_dict() for o in pagination.items],
+        'total': pagination.total,
+        'pages': pagination.pages,
+        'current_page': pagination.page
+    }), 200
+
+
+@api_bp.route('/offers/buyer', methods=['GET'])
+@jwt_required()
+def get_buyer_offers():
+    buyer_id = int(get_jwt_identity())
+    status = request.args.get('status')
+    
+    query = Offer.query.filter_by(buyer_id=buyer_id)
+    
+    if status:
+        query = query.filter_by(status=status)
+    
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 20, type=int)
+    
+    pagination = query.order_by(Offer.created_at.desc())\
+        .paginate(page=page, per_page=per_page, error_out=False)
+    
+    return jsonify({
+        'offers': [o.to_dict() for o in pagination.items],
+        'total': pagination.total,
+        'pages': pagination.pages,
+        'current_page': pagination.page
+    }), 200
+
+
+@api_bp.route('/offers/<int:offer_id>/accept', methods=['POST'])
+@jwt_required()
+def accept_offer(offer_id):
+    seller_id = int(get_jwt_identity())
+    offer = Offer.query.get(offer_id)
+    
+    if not offer:
+        return jsonify({'error': 'Offer not found'}), 404
+    
+    if offer.seller_id != seller_id:
+        return jsonify({'error': 'You can only accept your own offers'}), 403
+    
+    if offer.status != 'pending':
+        return jsonify({'error': 'Offer is not pending'}), 400
+    
+    offer.status = 'accepted'
+    
+    product = Product.query.get(offer.product_id)
+    if product:
+        product.price = offer.offered_price
+    
+    db.session.commit()
+    
+    return jsonify({
+        'message': 'Offer accepted successfully',
+        'offer': offer.to_dict()
+    }), 200
+
+
+@api_bp.route('/offers/<int:offer_id>/reject', methods=['POST'])
+@jwt_required()
+def reject_offer(offer_id):
+    seller_id = int(get_jwt_identity())
+    offer = Offer.query.get(offer_id)
+    
+    if not offer:
+        return jsonify({'error': 'Offer not found'}), 404
+    
+    if offer.seller_id != seller_id:
+        return jsonify({'error': 'You can only reject your own offers'}), 403
+    
+    if offer.status != 'pending':
+        return jsonify({'error': 'Offer is not pending'}), 400
+    
+    offer.status = 'rejected'
+    db.session.commit()
+    
+    return jsonify({
+        'message': 'Offer rejected successfully',
+        'offer': offer.to_dict()
+    }), 200
+
+
+@api_bp.route('/offers/<int:offer_id>/cancel', methods=['POST'])
+@jwt_required()
+def cancel_offer(offer_id):
+    buyer_id = int(get_jwt_identity())
+    offer = Offer.query.get(offer_id)
+    
+    if not offer:
+        return jsonify({'error': 'Offer not found'}), 404
+    
+    if offer.buyer_id != buyer_id:
+        return jsonify({'error': 'You can only cancel your own offers'}), 403
+    
+    if offer.status != 'pending':
+        return jsonify({'error': 'Only pending offers can be canceled'}), 400
+    
+    offer.status = 'canceled'
+    db.session.commit()
+    
+    return jsonify({
+        'message': 'Offer canceled successfully',
+        'offer': offer.to_dict()
     }), 200

@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useProductStore } from '../stores/product.js'
 import { useUserStore } from '../stores/user.js'
@@ -19,6 +19,7 @@ const selectedFile = ref(null)
 const imagePreview = ref(null)
 const categories = ['数码', '书籍', '服装', '生活用品', '运动', '其他']
 const errorMessage = ref('')
+const isLoading = ref(false)
 
 const handleFileChange = (event) => {
   const file = event.target.files[0]
@@ -33,6 +34,13 @@ const handleFileChange = (event) => {
 }
 
 const handleSubmit = async () => {
+  console.log('=== 开始发布商品 ===')
+  console.log('FormData:', formData.value)
+  console.log('User store - isLoggedIn:', userStore.isLoggedIn)
+  console.log('User store - token:', userStore.token ? '存在 (' + userStore.token.length + '字符)' : '空')
+  console.log('User store - userId:', userStore.userId)
+  console.log('LocalStorage user:', localStorage.getItem('user') ? '存在' : '不存在')
+  
   if (!formData.value.title || !formData.value.price) {
     errorMessage.value = '请填写商品标题和价格'
     return
@@ -49,7 +57,13 @@ const handleSubmit = async () => {
     return
   }
   
+  isLoading.value = true
+  errorMessage.value = ''
+  
   try {
+    console.log('发布商品 - Token前20字符:', userStore.token.substring(0, 20) + '...')
+    console.log('发布商品 - 用户ID:', userStore.userId)
+    
     await productStore.addProduct({
       name: formData.value.title,
       description: formData.value.description,
@@ -58,9 +72,21 @@ const handleSubmit = async () => {
       image: selectedFile.value
     }, userStore.token)
     
+    alert('商品发布成功！')
     router.push('/')
   } catch (error) {
+    console.error('发布商品失败:', error)
     errorMessage.value = error.message || '发布失败，请重试'
+    
+    if (error.message.includes('401') || error.message.includes('未授权')) {
+      errorMessage.value = '登录状态失效，请重新登录'
+      setTimeout(() => {
+        userStore.logout()
+        router.push('/login')
+      }, 2000)
+    }
+  } finally {
+    isLoading.value = false
   }
 }
 
@@ -68,9 +94,17 @@ const goBack = () => {
   router.push('/')
 }
 
-if (!userStore.isLoggedIn) {
-  router.push('/login')
-}
+onMounted(() => {
+  console.log('PublishProduct mounted')
+  console.log('User isLoggedIn:', userStore.isLoggedIn)
+  console.log('User token exists:', !!userStore.token)
+  console.log('User token:', userStore.token ? '***' : '空')
+  
+  if (!userStore.isLoggedIn) {
+    console.log('用户未登录，跳转登录页')
+    router.push('/login')
+  }
+})
 </script>
 
 <template>
@@ -149,7 +183,9 @@ if (!userStore.isLoggedIn) {
           {{ errorMessage }}
         </div>
         
-        <button type="submit" class="submit-button">发布商品</button>
+        <button type="submit" :disabled="isLoading" class="submit-button">
+          {{ isLoading ? '发布中...' : '发布商品' }}
+        </button>
       </form>
     </div>
   </div>
@@ -291,6 +327,9 @@ textarea {
   font-size: 14px;
   margin-bottom: 20px;
   text-align: center;
+  padding: 12px;
+  background-color: #f8d7da;
+  border-radius: 4px;
 }
 
 .submit-button {
@@ -306,11 +345,12 @@ textarea {
   transition: background-color 0.3s;
 }
 
-.submit-button:hover {
+.submit-button:hover:not(:disabled) {
   background-color: #45a049;
 }
 
-.submit-button:active {
-  background-color: #3d8b40;
+.submit-button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
 }
 </style>

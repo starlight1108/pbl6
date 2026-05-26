@@ -13,15 +13,30 @@ const newComment = ref('')
 const isLoading = ref(true)
 const isSubmitting = ref(false)
 
+// 议价相关状�?
+const showOfferModal = ref(false)
+const offerPrice = ref('')
+const isSubmittingOffer = ref(false)
+const currentOffer = ref(null)
+
+// 卖家视角的议价请求列�?
+const sellerOffers = ref([])
+const isProcessingOffer = ref(false)
+
 const fetchProduct = async () => {
   const productId = route.params.id
+  
+  // 重置议价状�?
+  currentOffer.value = null
+  sellerOffers.value = []
+  
   try {
     const response = await fetch(`http://127.0.0.1:5000/api/products/${productId}`)
     const data = await response.json()
     if (data.product) {
       product.value = data.product
     } else {
-      alert('商品不存在')
+      alert('商品不存�?)
       router.push('/')
     }
   } catch (error) {
@@ -46,14 +61,119 @@ const fetchComments = async () => {
   }
 }
 
+const fetchCurrentOffer = async () => {
+  if (!userStore.token || !product.value) return
+  
+  const productId = route.params.id
+  try {
+    const response = await fetch(`http://127.0.0.1:5000/api/offers/buyer?product_id=${productId}`, {
+      headers: {
+        'Authorization': `Bearer ${userStore.token}`
+      }
+    })
+    const data = await response.json()
+    if (data.offers && data.offers.length > 0) {
+      currentOffer.value = data.offers[0]
+    }
+  } catch (error) {
+    console.error('获取议价信息失败:', error)
+  }
+}
+
+const fetchSellerOffers = async () => {
+  if (!userStore.token || !product.value || !isSeller()) return
+  
+  const productId = route.params.id
+  try {
+    const response = await fetch(`http://127.0.0.1:5000/api/offers/seller?product_id=${productId}`, {
+      headers: {
+        'Authorization': `Bearer ${userStore.token}`
+      }
+    })
+    const data = await response.json()
+    if (data.offers) {
+      sellerOffers.value = data.offers
+    }
+  } catch (error) {
+    console.error('获取议价请求失败:', error)
+  }
+}
+
+const acceptOffer = async (offerId) => {
+  if (!confirm('确定要同意这个议价请求吗�?)) {
+    return
+  }
+  
+  isProcessingOffer.value = true
+  
+  try {
+    const response = await fetch(`http://127.0.0.1:5000/api/offers/${offerId}/accept`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${userStore.token}`
+      }
+    })
+    
+    const data = await response.json()
+    
+    if (response.ok) {
+      alert('议价已同意，页面将刷新以显示更新后的价格')
+      // 刷新页面以显示更新后的商品价�?
+      window.location.reload()
+    } else {
+      alert(data.error || '同意议价失败')
+    }
+  } catch (error) {
+    console.error('同意议价失败:', error)
+    alert('同意议价失败')
+  } finally {
+    isProcessingOffer.value = false
+  }
+}
+
+const rejectOffer = async (offerId) => {
+  if (!confirm('确定要拒绝这个议价请求吗�?)) {
+    return
+  }
+  
+  isProcessingOffer.value = true
+  
+  try {
+    const response = await fetch(`http://127.0.0.1:5000/api/offers/${offerId}/reject`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${userStore.token}`
+      }
+    })
+    
+    const data = await response.json()
+    
+    if (response.ok) {
+      alert('议价已拒�?)
+      // 更新议价状�?
+      const offerIndex = sellerOffers.value.findIndex(o => o.id === offerId)
+      if (offerIndex !== -1) {
+        sellerOffers.value[offerIndex].status = 'rejected'
+      }
+    } else {
+      alert(data.error || '拒绝议价失败')
+    }
+  } catch (error) {
+    console.error('拒绝议价失败:', error)
+    alert('拒绝议价失败')
+  } finally {
+    isProcessingOffer.value = false
+  }
+}
+
 const submitComment = async () => {
   if (!newComment.value.trim()) {
-    alert('请输入评论内容')
+    alert('请输入评论内�?)
     return
   }
   
   if (newComment.value.length > 500) {
-    alert('评论内容不能超过500字')
+    alert('评论内容不能超过500�?)
     return
   }
 
@@ -87,7 +207,7 @@ const submitComment = async () => {
 }
 
 const deleteComment = async (commentId) => {
-  if (!confirm('确定要删除这条评论吗？')) {
+  if (!confirm('确定要删除这条评论吗�?)) {
     return
   }
 
@@ -112,17 +232,126 @@ const deleteComment = async (commentId) => {
   }
 }
 
+
+const openOfferModal = () => {
+  if (!userStore.token) {
+    alert('请先登录')
+    router.push('/login')
+    return
+  }
+  
+  if (isSeller()) {
+    alert('不能对自己的商品议价')
+    return
+  }
+  
+  showOfferModal.value = true
+}
+
+const closeOfferModal = () => {
+  showOfferModal.value = false
+  offerPrice.value = ''
+}
+
+const submitOffer = async () => {
+  console.log('=== 提交议价 ===')
+  console.log('议价金额:', offerPrice.value)
+  console.log('商品ID:', route.params.id)
+  console.log('商品原价:', product.value?.price)
+  console.log('Token:', userStore.token ? '存在 (' + userStore.token.length + '字符)' : '�?)
+
+  if (!offerPrice.value || isNaN(offerPrice.value) || parseFloat(offerPrice.value) <= 0) {
+    alert('请输入有效的议价金额')
+    return
+  }
+
+  const price = parseFloat(offerPrice.value)
+  if (price >= product.value.price) {
+    alert('议价金额必须低于商品原价')
+    return
+  }
+
+  if (!userStore.token) {
+    alert('请先登录')
+    router.push('/login')
+    return
+  }
+
+  isSubmittingOffer.value = true
+
+  try {
+    const response = await fetch('http://127.0.0.1:5000/api/offers', {
+
 const contactSeller = async () => {
   if (!product.value || !userStore.token) return
 
   try {
     const response = await fetch('http://127.0.0.1:5000/api/conversations', {
+
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${userStore.token}`
       },
       body: JSON.stringify({
+
+        product_id: route.params.id,
+        offered_price: price
+      })
+    })
+
+    console.log('响应状�?', response.status)
+    
+    if (response.status === 401) {
+      alert('登录状态已过期，请重新登录')
+      userStore.logout()
+      router.push('/login')
+      return
+    }
+
+    const data = await response.json()
+    console.log('响应数据:', data)
+
+    if (response.ok) {
+      alert('议价请求已发送，等待卖家回复')
+      currentOffer.value = data.offer
+      closeOfferModal()
+    } else {
+      alert(data.error || '议价失败')
+    }
+  } catch (error) {
+    console.error('提交议价失败:', error)
+    alert('提交议价失败: ' + error.message)
+  } finally {
+    isSubmittingOffer.value = false
+  }
+}
+
+const isSeller = () => {
+  return userStore.userId && product.value && product.value.seller_id === userStore.userId
+}
+
+const getOfferStatusText = (status) => {
+  const statusMap = {
+    'pending': '待回�?,
+    'accepted': '已同�?,
+    'rejected': '已拒�?,
+    'canceled': '已取�?
+  }
+  return statusMap[status] || status
+}
+
+const getOfferStatusClass = (status) => {
+  const classMap = {
+    'pending': 'offer-status-pending',
+    'accepted': 'offer-status-accepted',
+    'rejected': 'offer-status-rejected',
+    'canceled': 'offer-status-canceled'
+  }
+  return classMap[status] || ''
+}
+
+
         seller_id: product.value.seller_id,
         product_id: product.value.id
       })
@@ -140,6 +369,7 @@ const contactSeller = async () => {
   }
 }
 
+
 const formatDate = (dateString) => {
   const date = new Date(dateString)
   return date.toLocaleString('zh-CN', {
@@ -152,7 +382,10 @@ const formatDate = (dateString) => {
 }
 
 onMounted(() => {
-  fetchProduct()
+  fetchProduct().then(() => {
+    fetchCurrentOffer()
+    fetchSellerOffers()
+  })
   fetchComments()
 })
 </script>
@@ -165,7 +398,7 @@ onMounted(() => {
     </div>
 
     <div v-if="isLoading" class="loading">
-      加载中...
+      加载�?..
     </div>
 
     <div v-else-if="product" class="product-content">
@@ -176,17 +409,82 @@ onMounted(() => {
         
         <div class="product-info">
           <h2 class="product-title">{{ product.title }}</h2>
-          <p class="product-price">¥{{ product.price.toFixed(2) }}</p>
+          <div class="price-section">
+            <p class="product-price">¥{{ product.price.toFixed(2) }}</p>
+            <button 
+              v-if="!isSeller() && product.status === 'active'" 
+              @click="openOfferModal" 
+              class="offer-button"
+            >
+              议价
+            </button>
+          </div>
+          
+          <!-- 议价状态显�?-->
+          <div v-if="currentOffer" class="offer-status">
+            <span class="offer-label">议价状态：</span>
+            <span :class="['offer-status-badge', getOfferStatusClass(currentOffer.status)]">
+              {{ getOfferStatusText(currentOffer.status) }}
+            </span>
+            <span v-if="currentOffer.status !== 'canceled'" class="offer-price">
+              议价金额：¥{{ currentOffer.offered_price.toFixed(2) }}
+            </span>
+          </div>
+          
           <p class="product-category">分类：{{ product.category }}</p>
           <p class="product-status" :class="{ 'inactive': product.status !== 'active' }">
-            {{ product.status === 'active' ? '在售' : '已下架' }}
+            {{ product.status === 'active' ? '在售' : '已下�? }}
           </p>
           <p class="product-seller">卖家：{{ product.seller?.nickname || '未知' }}</p>
           <p class="product-date">发布时间：{{ formatDate(product.created_at) }}</p>
           <p class="product-description">{{ product.description }}</p>
           
+
+          <!-- 卖家视角：议价请求列�?-->
+          <div v-if="isSeller()" class="seller-offers-section">
+            <h3>议价请求 ({{ sellerOffers.length }})</h3>
+            
+            <div v-if="sellerOffers.length === 0" class="no-offers">
+              <p>暂无议价请求</p>
+            </div>
+            
+            <div v-else class="offers-list">
+              <div v-for="offer in sellerOffers" :key="offer.id" class="offer-item">
+                <div class="offer-header">
+                  <span class="buyer-info">买家：{{ offer.buyer?.nickname || '匿名买家' }}</span>
+                  <span :class="['offer-status-badge', getOfferStatusClass(offer.status)]">
+                    {{ getOfferStatusText(offer.status) }}
+                  </span>
+                </div>
+                <div class="offer-content">
+                  <div class="price-info">
+                    <span class="original">原价：¥{{ offer.original_price?.toFixed(2) }}</span>
+                    <span class="offered">议价：¥{{ offer.offered_price?.toFixed(2) }}</span>
+                  </div>
+                  <p class="offer-time">{{ formatDate(offer.created_at) }}</p>
+                </div>
+                <div v-if="offer.status === 'pending'" class="offer-actions">
+                  <button 
+                    @click="acceptOffer(offer.id)" 
+                    :disabled="isProcessingOffer" 
+                    class="action-btn accept-btn"
+                  >
+                    同意
+                  </button>
+                  <button 
+                    @click="rejectOffer(offer.id)" 
+                    :disabled="isProcessingOffer" 
+                    class="action-btn reject-btn"
+                  >
+                    拒绝
+                  </button>
+                </div>
+              </div>
+            </div>
+
           <div v-if="userStore.token && userStore.id !== product.seller_id" class="product-actions">
             <button @click="contactSeller" class="contact-btn">联系卖家</button>
+
           </div>
         </div>
       </div>
@@ -202,12 +500,12 @@ onMounted(() => {
             class="comment-textarea"
           ></textarea>
           <button @click="submitComment" :disabled="isSubmitting" class="submit-comment-btn">
-            {{ isSubmitting ? '提交中...' : '发表评论' }}
+            {{ isSubmitting ? '提交�?..' : '发表评论' }}
           </button>
         </div>
 
         <div v-if="comments.length === 0" class="no-comments">
-          <p>暂无评论，快来发表第一条评论吧！</p>
+          <p>暂无评论，快来发表第一条评论吧�?/p>
         </div>
 
         <div v-else class="comments-list">
@@ -232,6 +530,38 @@ onMounted(() => {
             </div>
             <p class="comment-content">{{ comment.content }}</p>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 议价弹窗 -->
+    <div v-if="showOfferModal" class="modal-overlay" @click.self="closeOfferModal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>议价</h3>
+          <button @click="closeOfferModal" class="close-btn">×</button>
+        </div>
+        <div class="modal-body">
+          <p class="original-price">原价：¥{{ product?.price.toFixed(2) }}</p>
+          <div class="form-group">
+            <label for="offerPrice">您的议价金额</label>
+            <input 
+              type="number" 
+              id="offerPrice" 
+              v-model="offerPrice" 
+              placeholder="请输入议价金�?
+              step="0.01"
+              :max="product && product.price ? product.price - 0.01 : 999999"
+              min="0.01"
+              class="offer-input"
+            >
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button @click="closeOfferModal" class="cancel-btn">取消</button>
+          <button @click="submitOffer" :disabled="isSubmittingOffer" class="submit-offer-btn">
+            {{ isSubmittingOffer ? '提交�?..' : '提交议价' }}
+          </button>
         </div>
       </div>
     </div>
@@ -322,11 +652,82 @@ onMounted(() => {
   margin-bottom: 15px;
 }
 
+.price-section {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 15px;
+}
+
 .product-price {
   color: #f44336;
   font-size: 32px;
   font-weight: bold;
-  margin-bottom: 10px;
+  margin: 0;
+}
+
+.offer-button {
+  padding: 10px 20px;
+  background-color: #FF9800;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: bold;
+  transition: background-color 0.3s;
+}
+
+.offer-button:hover {
+  background-color: #f57c00;
+}
+
+.offer-status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  background-color: #f9f9f9;
+  border-radius: 4px;
+  margin-bottom: 15px;
+}
+
+.offer-label {
+  font-size: 14px;
+  color: #666;
+}
+
+.offer-status-badge {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.offer-status-pending {
+  background-color: #fff3e0;
+  color: #ff9800;
+}
+
+.offer-status-accepted {
+  background-color: #e8f5e9;
+  color: #4CAF50;
+}
+
+.offer-status-rejected {
+  background-color: #ffebee;
+  color: #f44336;
+}
+
+.offer-status-canceled {
+  background-color: #f5f5f5;
+  color: #999;
+}
+
+.offer-price {
+  font-size: 14px;
+  color: #f44336;
+  font-weight: bold;
 }
 
 .product-category,
@@ -356,11 +757,121 @@ onMounted(() => {
   border-top: 1px solid #eee;
 }
 
+
+/* 卖家议价请求区域 */
+.seller-offers-section {
+
 .product-actions {
+
   margin-top: 20px;
   padding-top: 20px;
   border-top: 1px solid #eee;
 }
+
+
+.seller-offers-section h3 {
+  color: #333;
+  font-size: 18px;
+  margin-bottom: 15px;
+}
+
+.no-offers {
+  text-align: center;
+  padding: 20px;
+  color: #999;
+  background-color: #f9f9f9;
+  border-radius: 4px;
+}
+
+.offers-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.offer-item {
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  padding: 15px;
+}
+
+.offer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.buyer-info {
+  font-size: 14px;
+  font-weight: bold;
+  color: #333;
+}
+
+.price-info {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 8px;
+}
+
+.price-info .original {
+  font-size: 14px;
+  color: #666;
+  text-decoration: line-through;
+}
+
+.price-info .offered {
+  font-size: 16px;
+  color: #f44336;
+  font-weight: bold;
+}
+
+.offer-time {
+  font-size: 12px;
+  color: #999;
+  margin: 0;
+}
+
+.offer-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed #ddd;
+}
+
+.offer-actions .action-btn {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.accept-btn {
+  background-color: #4CAF50;
+  color: white;
+}
+
+.accept-btn:hover:not(:disabled) {
+  background-color: #45a049;
+}
+
+.reject-btn {
+  background-color: #f44336;
+  color: white;
+}
+
+.reject-btn:hover:not(:disabled) {
+  background-color: #d32f2f;
+}
+
+.action-btn:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
 
 .contact-btn {
   padding: 12px 32px;
@@ -376,6 +887,7 @@ onMounted(() => {
 
 .contact-btn:hover {
   background-color: #F57C00;
+
 }
 
 .comments-section {
@@ -497,5 +1009,151 @@ onMounted(() => {
   line-height: 1.5;
   margin: 0;
   padding-left: 52px;
+}
+
+/* 弹窗样式 */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background-color: white;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 450px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid #eee;
+}
+
+.modal-header h3 {
+  margin: 0;
+  color: #333;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: #999;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+
+.close-btn:hover {
+  color: #333;
+}
+
+.modal-body {
+  padding: 20px;
+}
+
+.original-price {
+  font-size: 16px;
+  color: #666;
+  margin-bottom: 20px;
+}
+
+.original-price strong {
+  color: #f44336;
+  font-size: 20px;
+}
+
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  color: #555;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.offer-input {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 16px;
+}
+
+.offer-input:focus {
+  outline: none;
+  border-color: #FF9800;
+}
+
+.offer-textarea {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  resize: vertical;
+}
+
+.offer-textarea:focus {
+  outline: none;
+  border-color: #FF9800;
+}
+
+.modal-footer {
+  display: flex;
+  gap: 10px;
+  padding: 16px 20px;
+  border-top: 1px solid #eee;
+}
+
+.cancel-btn {
+  flex: 1;
+  padding: 12px;
+  background-color: #f0f0f0;
+  color: #333;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.cancel-btn:hover {
+  background-color: #e0e0e0;
+}
+
+.submit-offer-btn {
+  flex: 2;
+  padding: 12px;
+  background-color: #FF9800;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.submit-offer-btn:hover:not(:disabled) {
+  background-color: #f57c00;
+}
+
+.submit-offer-btn:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
 }
 </style>
