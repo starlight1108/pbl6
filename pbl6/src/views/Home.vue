@@ -19,10 +19,10 @@ const sortOrder = ref('desc')
 const showFavoritesOnly = ref(false)
 
 const sortOptions = [
-  { value: 'created_at', label: '最新发�? },
+  { value: 'created_at', label: '最新发布' },
   { value: 'price_asc', label: '价格从低到高' },
   { value: 'price_desc', label: '价格从高到低' },
-  { value: 'title', label: '按名称排�? }
+  { value: 'title', label: '按名称排序' }
 ]
 
 const getAvatarUrl = () => {
@@ -79,10 +79,10 @@ const handleChat = () => {
 }
 
 const handleDeleteProduct = async (id) => {
-  if (confirm('确定要删除这个商品吗�?)) {
+  if (confirm('确定要删除这个商品吗？')) {
     const success = await productStore.deleteProduct(id, userStore.token)
     if (success) {
-      alert('商品删除成功�?)
+      alert('商品删除成功！')
     } else {
       alert('删除失败，请重试')
     }
@@ -163,7 +163,7 @@ const handleCategoryChange = async () => {
     const sort = parseSortOption(sortBy.value)
     await productStore.fetchProducts(1, 20, selectedCategory.value || null, searchKeyword.value, sort.sortBy, sort.sortOrder)
   } catch (error) {
-    console.error('筛选商品失�?', error)
+    console.error('筛选商品失败', error)
   } finally {
     isLoading.value = false
   }
@@ -191,7 +191,7 @@ const toggleShowFavorites = async () => {
     }
     
     if (!userStore.token) {
-      alert('登录状态失效，请重新登�?)
+      alert('登录状态失效，请重新登录')
       router.push('/login')
       return
     }
@@ -215,11 +215,11 @@ const toggleShowFavorites = async () => {
     console.error('获取收藏列表失败:', error)
     
     if (error.message === 'token_expired' || error.message.includes('expired')) {
-      alert('登录已过期，请重新登�?)
+      alert('登录已过期，请重新登录')
       userStore.logout()
       router.push('/login')
     } else if (error.message.includes('token') || error.message.includes('认证')) {
-      alert('登录状态失效，请重新登�?)
+      alert('登录状态失效，请重新登录')
       userStore.logout()
       router.push('/login')
     } else {
@@ -243,7 +243,7 @@ const toggleFavorite = async (productId) => {
     if (favoriteStatus.value[productId]) {
       await productStore.removeFavorite(productId, userStore.token)
       favoriteStatus.value[productId] = false
-      alert('已取消收�?)
+      alert('已取消收藏')
     } else {
       await productStore.addFavorite(productId, userStore.token)
       favoriteStatus.value[productId] = true
@@ -282,7 +282,7 @@ onMounted(async () => {
     ])
     await checkFavoriteStatus()
   } catch (error) {
-    console.error('初始化失�?', error)
+    console.error('初始化失败', error)
   } finally {
     isLoading.value = false
   }
@@ -307,7 +307,7 @@ onMounted(async () => {
 <button @click="handleMyProducts" class="dropdown-item my-products-item">我发布的</button>
               <button @click="handleChat" class="dropdown-item chat-item">我的消息</button>
               <button @click="handlePublish" class="dropdown-item publish-item">发布商品</button>
-              <button @click="handleLogout" class="dropdown-item logout-item">退出登�?/button>
+              <button @click="handleLogout" class="dropdown-item logout-item">退出登录</button>
             </div>
           </div>
         </template>
@@ -319,7 +319,7 @@ onMounted(async () => {
     
     <div class="content">
       <h2>首页</h2>
-      <p>这里是二手校园交易平台的首页，您可以在这里浏览和发布二手商品�?/p>
+      <p>这里是二手校园交易平台的首页，您可以在这里浏览和发布二手商品</p>
       
       <div class="search-section">
         <div class="search-bar">
@@ -351,7 +351,7 @@ onMounted(async () => {
           class="favorites-button"
           :class="{ 'active': showFavoritesOnly }"
         >
-          �?我的收藏
+          ★我的收藏
         </button>
       </div>
       
@@ -374,7 +374,7 @@ onMounted(async () => {
                 class="favorite-button"
                 :class="{ 'favorited': favoriteStatus[product.id] }"
               >
-                �?
+                ★
               </button>
             </div>
             <div class="product-info">
