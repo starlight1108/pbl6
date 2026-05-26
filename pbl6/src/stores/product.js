@@ -76,8 +76,7 @@ export const useProductStore = defineStore('product', {
         }
         
         console.log('发送请求到:', `${API_BASE_URL}/products`)
-        console.log('token长度:', token ? token.length : 0)
-        console.log('token前20字符:', token ? token.substring(0, 20) + '...' : '空')
+        console.log('token:', token ? '存在' : '不存在')
         console.log('formData内容:', {
           title: product.name,
           price: product.price,
@@ -95,14 +94,6 @@ export const useProductStore = defineStore('product', {
         })
         
         console.log('响应状态:', response.status)
-        
-        if (response.status === 401) {
-          console.error('401未授权 - token可能过期或无效')
-          const userStore = useUserStore()
-          userStore.logout()
-          throw new Error('登录状态已过期，请重新登录')
-        }
-        
         const data = await response.json()
         console.log('响应数据:', data)
         

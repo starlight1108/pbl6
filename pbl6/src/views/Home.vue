@@ -68,11 +68,6 @@ const handleProfile = () => {
   isDropdownOpen.value = false
 }
 
-const handleMyProducts = () => {
-  router.push('/my-products')
-  isDropdownOpen.value = false
-}
-
 const handleChat = () => {
   router.push('/chat')
   isDropdownOpen.value = false
@@ -163,7 +158,7 @@ const handleCategoryChange = async () => {
     const sort = parseSortOption(sortBy.value)
     await productStore.fetchProducts(1, 20, selectedCategory.value || null, searchKeyword.value, sort.sortBy, sort.sortOrder)
   } catch (error) {
-    console.error('筛选商品失败', error)
+    console.error('筛选商品失败:', error)
   } finally {
     isLoading.value = false
   }
@@ -282,7 +277,7 @@ onMounted(async () => {
     ])
     await checkFavoriteStatus()
   } catch (error) {
-    console.error('初始化失败', error)
+    console.error('初始化失败:', error)
   } finally {
     isLoading.value = false
   }
@@ -304,7 +299,6 @@ onMounted(async () => {
             <button @click="toggleDropdown" class="dropdown-button">菜单</button>
             <div v-if="isDropdownOpen" class="dropdown-menu">
               <button @click="handleProfile" class="dropdown-item profile-item">个人信息</button>
-<button @click="handleMyProducts" class="dropdown-item my-products-item">我发布的</button>
               <button @click="handleChat" class="dropdown-item chat-item">我的消息</button>
               <button @click="handlePublish" class="dropdown-item publish-item">发布商品</button>
               <button @click="handleLogout" class="dropdown-item logout-item">退出登录</button>
@@ -319,7 +313,7 @@ onMounted(async () => {
     
     <div class="content">
       <h2>首页</h2>
-      <p>这里是二手校园交易平台的首页，您可以在这里浏览和发布二手商品</p>
+      <p>这里是二手校园交易平台的首页，您可以在这里浏览和发布二手商品。</p>
       
       <div class="search-section">
         <div class="search-bar">
@@ -351,14 +345,14 @@ onMounted(async () => {
           class="favorites-button"
           :class="{ 'active': showFavoritesOnly }"
         >
-          ★我的收藏
+          ♥ 我的收藏
         </button>
       </div>
       
       <div class="products-section">
         <h3>商品列表</h3>
         <div v-if="isLoading" class="loading">
-          <p>加载�?..</p>
+          <p>加载中...</p>
         </div>
         <div v-else-if="productStore.products.length === 0" class="no-products">
           <p>暂无收藏商品，快去收藏心仪的商品吧！</p>
@@ -374,7 +368,7 @@ onMounted(async () => {
                 class="favorite-button"
                 :class="{ 'favorited': favoriteStatus[product.id] }"
               >
-                ★
+                ♥
               </button>
             </div>
             <div class="product-info">
@@ -510,7 +504,6 @@ onMounted(async () => {
   color: #2196F3;
 }
 
-.my-products-item,
 .chat-item {
   color: #FF9800;
 }

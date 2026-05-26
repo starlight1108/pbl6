@@ -44,16 +44,6 @@ const router = createRouter({
       component: () => import('../views/Profile.vue')
     },
     {
-      path: '/my-products',
-      name: 'my-products',
-      component: () => import('../views/MyProducts.vue')
-    },
-    {
-      path: '/products/edit/:id',
-      name: 'edit-product',
-      component: () => import('../views/EditProduct.vue')
-    },
-    {
       path: '/notifications',
       name: 'notifications',
       component: () => import('../views/Notifications.vue')
