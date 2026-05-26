@@ -23,7 +23,8 @@ const getTypeLabel = (type) => {
     'order': '订单通知',
     'system': '系统通知',
     'comment': '评论通知',
-    'favorite': '收藏通知'
+    'favorite': '收藏通知',
+    'report': '举报通知'
   }
   return labels[type] || '通知'
 }
@@ -34,7 +35,8 @@ const getTypeColor = (type) => {
     'order': '#FF9800',
     'system': '#9C27B0',
     'comment': '#4CAF50',
-    'favorite': '#E91E63'
+    'favorite': '#E91E63',
+    'report': '#f44336'
   }
   return colors[type] || '#666'
 }
@@ -62,6 +64,8 @@ const handleNotificationClick = async (notification) => {
   
   if (notification.related_type === 'product' && notification.related_id) {
     router.push(`/products/${notification.related_id}`)
+  } else if (notification.related_type === 'report' && notification.related_id) {
+    router.push(`/reports`)
   }
 }
 

@@ -42,6 +42,27 @@ const goToChat = () => {
   showDropdown.value = false
 }
 
+const goToReports = () => {
+  router.push('/reports')
+  showDropdown.value = false
+}
+
+const handleNotificationItemClick = async (notification) => {
+  if (!notification.is_read) {
+    await notificationStore.markAsRead(notification.id)
+  }
+  
+  if (notification.related_type === 'product' && notification.related_id) {
+    router.push(`/products/${notification.related_id}`)
+    showDropdown.value = false
+  } else if (notification.related_type === 'report' && notification.related_id) {
+    router.push('/reports')
+    showDropdown.value = false
+  } else {
+    goToNotifications()
+  }
+}
+
 const handleMarkAllRead = async () => {
   await notificationStore.markAllAsRead()
 }
@@ -60,9 +81,11 @@ const formatTime = (dateString) => {
 const startPolling = () => {
   if (userStore.isLoggedIn) {
     notificationStore.fetchUnreadCount()
+    notificationStore.fetchNotifications(1, 10)
     chatStore.loadConversations()
     pollingInterval = setInterval(() => {
       notificationStore.fetchUnreadCount()
+      notificationStore.fetchNotifications(1, 10)
       chatStore.loadConversations()
     }, 30000)
   }
@@ -128,6 +151,7 @@ onUnmounted(() => {
               v-for="notification in notificationStore.notifications.slice(0, 5)" 
               :key="notification.id"
               :class="['item', { unread: !notification.is_read }]"
+              @click="handleNotificationItemClick(notification)"
             >
               <div class="item-content">
                 <div class="item-title">{{ notification.title }}</div>
