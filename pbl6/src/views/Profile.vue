@@ -22,11 +22,21 @@ const getAvatarUrl = (path) => {
   return baseUrl + '/static/images/default-avatar.png'
 }
 
+const allowedExtensions = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'tiff', 'tif']
+
 const handleAvatarChange = (event) => {
   const file = event.target.files[0]
   if (file) {
+    const ext = file.name.split('.').pop()?.toLowerCase()
+    if (!ext || !allowedExtensions.includes(ext)) {
+      message.value = '不支持的图片格式，仅支持: png, jpg, jpeg, gif, webp, bmp, tiff'
+      event.target.value = ''
+      return
+    }
+
     avatarFile.value = file
-    
+    message.value = ''
+
     const reader = new FileReader()
     reader.onload = (e) => {
       avatarPreview.value = e.target.result

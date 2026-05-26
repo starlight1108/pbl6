@@ -73,9 +73,15 @@ def update_profile():
 
     if 'avatar' in request.files:
         file = request.files['avatar']
-        if file and file.filename and allowed_file(file.filename, current_app.config['ALLOWED_EXTENSIONS']):
+        if not file or not file.filename:
+            return jsonify({'error': 'No selected file'}), 400
+        if not allowed_file(file.filename, current_app.config['ALLOWED_EXTENSIONS']):
+            return jsonify({'error': 'Invalid file type. Allowed: png, jpg, jpeg, gif, webp, bmp, tiff'}), 400
+        try:
             filename = save_image(file, current_app.config['AVATAR_FOLDER'], max_size=(200, 200))
             user.avatar = filename
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
 
     db.session.commit()
 
