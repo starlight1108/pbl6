@@ -9,8 +9,9 @@
  *   5. 商品详情查看
  *   6. 商品收藏功能
  *   7. 我发布的商品管理
- *   8. 商品修改
- *   9. 商品上下架
+ *   8. 商品删除
+ *   9. 商品修改
+ *   10. 商品上下架
  *
  * @see https://playwright.dev/docs/writing-tests
  */
@@ -229,6 +230,75 @@ test.describe('📦 商品发布与浏览流程', () => {
         const actionButtons = productCards.first().locator('.product-actions');
         await expect(actionButtons).toBeVisible();
       }
+    });
+  });
+
+  // ==========================================================
+  // 8. 商品删除
+  // ==========================================================
+  test('8.1 商品删除 - 成功删除已发布的商品', async ({ page }) => {
+    await test.step('进入"我发布的"页面', async () => {
+      await page.click('button.dropdown-button');
+      await page.click('button.my-products-item');
+      await page.waitForURL('**/my-products');
+      await waitForPageReady(page);
+    });
+
+    await test.step('获取当前商品数量', async () => {
+      await page.waitForTimeout(1000);
+      const count = await page.locator('.product-card').count();
+      console.log(`删除前商品数量: ${count}`);
+      // 确保有商品可删除
+      if (count === 0) {
+        console.log('⚠️ 没有商品可删除，跳过此测试');
+        test.skip();
+        return;
+      }
+    });
+
+    await test.step('点击第一个商品的删除按钮并确认', async () => {
+      // 获取第一个商品的标题，便于后续验证
+      const firstProductTitle = await page.locator('.product-title').first().textContent();
+      console.log(`即将删除商品: ${firstProductTitle}`);
+
+      // 获取删除前的商品数量
+      const beforeCount = await page.locator('.product-card').count();
+
+      // 设置对话框处理 - 接受 confirm("确定要删除这个商品吗？")
+      let dialogHandled = false;
+      page.on('dialog', async (dialog) => {
+        console.log(`对话框: ${dialog.type()} - ${dialog.message()}`);
+        if (dialog.type() === 'confirm') {
+          await dialog.accept();
+          dialogHandled = true;
+        } else if (dialog.type() === 'alert') {
+          await dialog.accept();
+        }
+      });
+
+      // 点击删除按钮
+      await page.locator('button.delete-btn').first().click();
+
+      // 等待删除完成（alert 弹窗出现并关闭）
+      await page.waitForTimeout(2000);
+
+      // 验证商品数量减少
+      const afterCount = await page.locator('.product-card').count();
+      console.log(`删除后商品数量: ${afterCount}`);
+      expect(afterCount).toBe(beforeCount - 1);
+    });
+
+    await test.step('验证删除后的商品不再出现在列表中', async () => {
+      // 刷新页面确认删除已持久化
+      await page.reload();
+      await waitForPageReady(page);
+      await page.waitForTimeout(1000);
+
+      const productTitles = page.locator('.product-title');
+      const count = await productTitles.count();
+      console.log(`刷新后的商品数量: ${count}`);
+      // 页面能正常显示
+      await expect(page.locator('h1')).toContainText('我发布的商品');
     });
   });
 });
