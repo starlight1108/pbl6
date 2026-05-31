@@ -85,3 +85,4 @@ pbl6/tests/test-results/
 pbl6/tests/playwright-report/
 pbl6/tests/playwright/.cache/
 pbl6/test-results/
+.github

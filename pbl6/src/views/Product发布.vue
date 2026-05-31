@@ -99,94 +99,114 @@ const submitForm = async () => {
 <style scoped>
 .product发布 {
   min-height: 100vh;
-  background-color: #f5f5f5;
+  background: linear-gradient(135deg, #FAF5FF 0%, #F3E8FF 100%);
+  font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif;
 }
 
 .header {
-  background-color: white;
-  padding: 20px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  padding: 16px 24px;
+  box-shadow: 0 1px 3px rgba(124, 58, 237, 0.08);
   display: flex;
   justify-content: space-between;
   align-items: center;
+  border-bottom: 1px solid rgba(124, 58, 237, 0.1);
 }
 
 .header h1 {
-  color: #4CAF50;
+  background: linear-gradient(135deg, #7C3AED, #A78BFA);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
   margin: 0;
-  font-size: 24px;
+  font-size: 22px;
+  font-weight: 700;
 }
 
 .back-button {
-  padding: 8px 16px;
-  background-color: #666;
+  padding: 10px 22px;
+  background: linear-gradient(135deg, #7C3AED, #6D28D9);
   color: white;
   border: none;
-  border-radius: 4px;
+  border-radius: 10px;
   cursor: pointer;
   font-size: 14px;
-  transition: background-color 0.3s;
+  font-weight: 600;
+  transition: all 0.25s ease;
+  box-shadow: 0 4px 14px rgba(124, 58, 237, 0.25);
 }
 
-.back-button:hover {
-  background-color: #555;
-}
+.back-button:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(124, 58, 237, 0.35); }
 
 .content {
   max-width: 600px;
   margin: 40px auto;
-  padding: 20px;
-  background-color: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  padding: 32px;
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 4px 24px rgba(124, 58, 237, 0.08);
+  border: 1px solid rgba(124, 58, 237, 0.06);
 }
 
 .content h2 {
-  color: #333;
-  margin-bottom: 20px;
+  background: linear-gradient(135deg, #7C3AED, #A78BFA);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 24px;
   text-align: center;
+  font-size: 20px;
+  font-weight: 700;
 }
 
-.form-group {
-  margin-bottom: 15px;
-}
+.form-group { margin-bottom: 18px; }
 
 label {
   display: block;
-  margin-bottom: 5px;
-  font-weight: bold;
-  color: #555;
+  margin-bottom: 6px;
+  font-weight: 600;
+  color: #4C1D95;
+  font-size: 14px;
 }
 
 input, textarea {
   width: 100%;
-  padding: 10px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 16px;
+  padding: 12px 16px;
+  border: 2px solid #EDE9FE;
+  border-radius: 12px;
+  font-size: 15px;
+  background: #FAF5FF;
+  outline: none;
+  transition: all 0.25s ease;
+  box-sizing: border-box;
+  font-family: inherit;
 }
 
-textarea {
-  height: 100px;
-  resize: vertical;
+input:focus, textarea:focus {
+  border-color: #7C3AED;
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.15);
+  background: white;
 }
+
+textarea { height: 100px; resize: vertical; }
 
 .submit-button {
   display: block;
   width: 100%;
-  padding: 12px;
-  background-color: #4CAF50;
+  padding: 14px;
+  background: linear-gradient(135deg, #7C3AED, #6D28D9);
   color: white;
   border: none;
-  border-radius: 4px;
+  border-radius: 12px;
   cursor: pointer;
   font-size: 16px;
-  font-weight: bold;
-  transition: background-color 0.3s;
+  font-weight: 700;
+  transition: all 0.25s ease;
+  box-shadow: 0 4px 14px rgba(124, 58, 237, 0.3);
   margin-top: 20px;
+  letter-spacing: 0.3px;
 }
 
-.submit-button:hover {
-  background-color: #45a049;
-}
+.submit-button:hover { transform: translateY(-1px); box-shadow: 0 8px 25px rgba(124, 58, 237, 0.4); }
 </style>
