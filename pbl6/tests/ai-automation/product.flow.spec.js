@@ -172,10 +172,14 @@ test.describe('📦 商品发布与浏览流程', () => {
   test('5.1 商品详情 - 点击商品查看详情', async ({ page }) => {
     await test.step('点击第一个商品查看详情', async () => {
       await page.waitForTimeout(1000);
+      // 点击商品图片进入详情
       const firstProductImage = page.locator('.product-image').first();
-      await firstProductImage.click();
-      // 应跳转到商品详情页
-      await page.waitForURL(/\/products\//);
+      await firstProductImage.waitFor({ state: 'visible', timeout: 5000 });
+      // 使用 Promise.all 确保导航完成
+      await Promise.all([
+        page.waitForURL(/\/products\//, { timeout: 15000 }),
+        firstProductImage.click({ force: true })
+      ]);
       await waitForPageReady(page);
     });
 

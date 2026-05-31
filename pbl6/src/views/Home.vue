@@ -292,34 +292,58 @@ onMounted(async () => {
 <template>
   <div class="home-container">
     <div class="header">
-      <h1>二手校园交易平台</h1>
+      <h1>
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 8px;"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+        校园二手交易平台
+      </h1>
       <div class="header-actions">
         <template v-if="userStore.isLoggedIn">
           <div class="user-info">
             <img :src="getAvatarUrl()" :alt="userStore.nickname" class="user-avatar">
-            <span>欢迎，{{ userStore.nickname }}</span>
+            <span>{{ userStore.nickname }}</span>
           </div>
           <NotificationBell />
           <div class="dropdown">
-            <button @click="toggleDropdown" class="dropdown-button">菜单</button>
+            <button @click="toggleDropdown" class="dropdown-button">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+              菜单
+            </button>
             <div v-if="isDropdownOpen" class="dropdown-menu">
-              <button @click="handleProfile" class="dropdown-item profile-item">个人信息</button>
-<button @click="handleMyProducts" class="dropdown-item my-products-item">我发布的</button>
-              <button @click="handleChat" class="dropdown-item chat-item">我的消息</button>
-              <button @click="handlePublish" class="dropdown-item publish-item">发布商品</button>
-              <button @click="handleLogout" class="dropdown-item logout-item">退出登录</button>
+              <button @click="handleProfile" class="dropdown-item profile-item">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                个人信息
+              </button>
+              <button @click="handleMyProducts" class="dropdown-item my-products-item">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/></svg>
+                我发布的
+              </button>
+              <button @click="handleChat" class="dropdown-item chat-item">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                我的消息
+              </button>
+              <button @click="handlePublish" class="dropdown-item publish-item">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                发布商品
+              </button>
+              <div class="dropdown-divider"></div>
+              <button @click="handleLogout" class="dropdown-item logout-item">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                退出登录
+              </button>
             </div>
           </div>
         </template>
         <template v-else>
-          <button @click="router.push('/login')" class="login-button">登录</button>
+          <button @click="router.push('/login')" class="login-button">开始探索</button>
         </template>
       </div>
     </div>
     
     <div class="content">
-      <h2>首页</h2>
-      <p>这里是二手校园交易平台的首页，您可以在这里浏览和发布二手商品</p>
+      <div class="hero-section">
+        <h2>发现校园好物</h2>
+        <p>买卖二手物品，让闲置焕发新生</p>
+      </div>
       
       <div class="search-section">
         <div class="search-bar">
@@ -358,10 +382,13 @@ onMounted(async () => {
       <div class="products-section">
         <h3>商品列表</h3>
         <div v-if="isLoading" class="loading">
-          <p>加载�?..</p>
+          <p>加载中...</p>
         </div>
         <div v-else-if="productStore.products.length === 0" class="no-products">
-          <p>暂无收藏商品，快去收藏心仪的商品吧！</p>
+          <div class="no-products-icon">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#7C3AED" stroke-width="1.5" opacity="0.4"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+          </div>
+          <p>暂无商品，快去发布或探索吧！</p>
         </div>
         <div v-else class="products-grid">
           <div v-for="product in productStore.products" :key="product.id" class="product-card">
@@ -388,7 +415,7 @@ onMounted(async () => {
               </div>
               <p class="product-seller">卖家：{{ product.seller?.nickname || '匿名' }}</p>
               <p class="product-description">{{ product.description }}</p>
-              <p class="product-price">¥{{ product.price?.toFixed(2) }}</p>
+              <p class="product-price">{{ product.price?.toFixed(2) }}</p>
               <button
                 v-if="userStore.isLoggedIn && userStore.id !== product.seller_id"
                 @click.stop="handleContactSeller(product)"
@@ -405,266 +432,390 @@ onMounted(async () => {
 </template>
 
 <style scoped>
+/* ===== 设计系统：活力块状风格 ===== */
+/* 主色：#7C3AED（紫色） | CTA：#22C55E（绿色） | 背景：#FAF5FF */
+
 .home-container {
   min-height: 100vh;
-  background-color: #f5f5f5;
+  background: linear-gradient(135deg, #FAF5FF 0%, #F3E8FF 100%);
+  font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif;
 }
 
+/* ===== 导航栏 ===== */
 .header {
-  background-color: white;
-  padding: 20px 40px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  padding: 16px 40px;
+  box-shadow: 0 1px 3px rgba(124, 58, 237, 0.08);
   display: flex;
   justify-content: space-between;
   align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  border-bottom: 1px solid rgba(124, 58, 237, 0.1);
 }
 
 .header h1 {
-  color: #4CAF50;
-  font-size: 24px;
+  background: linear-gradient(135deg, #7C3AED, #A78BFA);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-size: 22px;
   margin: 0;
+  font-weight: 700;
+  letter-spacing: -0.3px;
 }
 
 .header-actions {
   display: flex;
   align-items: center;
-  gap: 15px;
+  gap: 16px;
 }
 
 .user-info {
   display: flex;
   align-items: center;
   gap: 10px;
+  background: #FAF5FF;
+  padding: 4px 14px 4px 4px;
+  border-radius: 24px;
+  border: 1px solid rgba(124, 58, 237, 0.15);
 }
 
 .user-avatar {
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   object-fit: cover;
-  border: 2px solid #4CAF50;
+  border: 2px solid #A78BFA;
 }
 
 .header-actions span {
-  color: #333;
-  font-size: 16px;
+  color: #4C1D95;
+  font-size: 14px;
+  font-weight: 500;
 }
 
 .login-button {
-  padding: 10px 24px;
-  background-color: #4CAF50;
+  padding: 10px 28px;
+  background: linear-gradient(135deg, #7C3AED, #6D28D9);
   color: white;
   border: none;
-  border-radius: 4px;
+  border-radius: 10px;
   font-size: 14px;
+  font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: all 0.25s ease;
+  box-shadow: 0 4px 14px rgba(124, 58, 237, 0.3);
 }
 
 .login-button:hover {
-  background-color: #45a049;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(124, 58, 237, 0.4);
 }
 
+.login-button:active {
+  transform: translateY(0);
+}
+
+/* ===== 下拉菜单 ===== */
 .dropdown {
   position: relative;
 }
 
 .dropdown-button {
-  padding: 8px 16px;
-  background-color: #f0f0f0;
+  padding: 8px 18px;
+  background: linear-gradient(135deg, #7C3AED, #6D28D9);
+  color: white;
   border: none;
-  border-radius: 4px;
+  border-radius: 10px;
   cursor: pointer;
   font-size: 14px;
+  font-weight: 500;
+  transition: all 0.25s ease;
+  box-shadow: 0 2px 8px rgba(124, 58, 237, 0.25);
+}
+
+.dropdown-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(124, 58, 237, 0.35);
 }
 
 .dropdown-menu {
   position: absolute;
   right: 0;
-  top: 100%;
-  background-color: white;
-  border-radius: 4px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  margin-top: 5px;
-  min-width: 120px;
+  top: calc(100% + 8px);
+  background: white;
+  border-radius: 14px;
+  box-shadow: 0 10px 40px rgba(124, 58, 237, 0.15), 0 2px 10px rgba(0, 0, 0, 0.06);
+  padding: 6px;
+  min-width: 150px;
   z-index: 100;
+  animation: dropdownFadeIn 0.2s ease;
+  border: 1px solid rgba(124, 58, 237, 0.08);
+}
+
+@keyframes dropdownFadeIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .dropdown-item {
   display: block;
   width: 100%;
-  padding: 10px 16px;
+  padding: 10px 14px;
   border: none;
   background: none;
   text-align: left;
   cursor: pointer;
   font-size: 14px;
-  transition: background-color 0.2s;
+  border-radius: 10px;
+  transition: all 0.2s ease;
+  font-weight: 500;
 }
 
 .dropdown-item:hover {
-  background-color: #f5f5f5;
+  background: #FAF5FF;
+  transform: translateX(3px);
 }
 
-.profile-item {
-  color: #2196F3;
+.dropdown-item svg {
+  width: 16px;
+  height: 16px;
+  margin-right: 10px;
+  vertical-align: middle;
+  flex-shrink: 0;
 }
 
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dropdown-divider {
+  height: 1px;
+  background: #EDE9FE;
+  margin: 4px 10px;
+}
+
+.profile-item { color: #7C3AED; }
 .my-products-item,
-.chat-item {
-  color: #FF9800;
-}
+.chat-item { color: #7C3AED; }
+.publish-item { color: #22C55E; }
+.notification-item { color: #7C3AED; }
+.logout-item { color: #EF4444; }
 
-.publish-item {
-  color: #4CAF50;
-}
-
-.notification-item {
-  color: #2196F3;
-}
-
-.logout-item {
-  color: #f44336;
-}
-
+/* ===== 内容区 ===== */
 .content {
-  padding: 40px;
+  padding: 32px 40px 60px;
   max-width: 1200px;
   margin: 0 auto;
 }
 
-.content h2 {
-  color: #333;
-  margin-bottom: 10px;
+.hero-section {
+  margin-bottom: 28px;
 }
 
-.content > p {
-  color: #666;
-  margin-bottom: 20px;
+.hero-section h2 {
+  color: #4C1D95;
+  font-size: 32px;
+  font-weight: 800;
+  margin: 0 0 6px;
+  letter-spacing: -0.5px;
 }
 
+.hero-section p {
+  color: #7C3AED;
+  opacity: 0.7;
+  font-size: 16px;
+  margin: 0;
+}
+
+/* ===== 搜索区（Hero 风格） ===== */
 .search-section {
+  background: white;
+  padding: 24px 28px;
+  border-radius: 18px;
+  box-shadow: 0 4px 24px rgba(124, 58, 237, 0.08);
   display: flex;
-  gap: 20px;
-  margin-bottom: 20px;
+  gap: 16px;
+  margin-bottom: 28px;
   align-items: center;
+  flex-wrap: wrap;
+  border: 1px solid rgba(124, 58, 237, 0.06);
 }
 
 .search-bar {
   flex: 1;
   display: flex;
   gap: 10px;
+  min-width: 250px;
 }
 
 .search-input {
   flex: 1;
-  padding: 10px 16px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
+  padding: 12px 18px;
+  border: 2px solid #EDE9FE;
+  border-radius: 12px;
   font-size: 14px;
+  background: #FAF5FF;
+  transition: all 0.25s ease;
+  outline: none;
+}
+
+.search-input:focus {
+  border-color: #7C3AED;
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.15);
+  background: white;
 }
 
 .search-button {
-  padding: 10px 24px;
-  background-color: #4CAF50;
+  padding: 12px 28px;
+  background: linear-gradient(135deg, #7C3AED, #6D28D9);
   color: white;
   border: none;
-  border-radius: 4px;
+  border-radius: 12px;
   cursor: pointer;
   font-size: 14px;
-  transition: background-color 0.2s;
+  font-weight: 600;
+  transition: all 0.25s ease;
+  white-space: nowrap;
 }
 
 .search-button:hover {
-  background-color: #45a049;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(124, 58, 237, 0.35);
 }
 
-.category-filter {
-  min-width: 150px;
-}
-
-.category-select {
-  width: 100%;
-  padding: 10px 16px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 14px;
-  background-color: white;
-  cursor: pointer;
-}
-
+.category-filter,
 .sort-filter {
-  min-width: 150px;
+  min-width: 140px;
 }
 
+.category-select,
 .sort-select {
   width: 100%;
-  padding: 10px 16px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
+  padding: 12px 16px;
+  border: 2px solid #EDE9FE;
+  border-radius: 12px;
   font-size: 14px;
-  background-color: white;
+  background: #FAF5FF;
   cursor: pointer;
+  outline: none;
+  transition: all 0.25s ease;
+  color: #4C1D95;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%237C3AED' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 36px;
+}
+
+.category-select:focus,
+.sort-select:focus {
+  border-color: #7C3AED;
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.15);
+  background-color: white;
 }
 
 .favorites-button {
-  padding: 10px 20px;
-  border: 1px solid #ff6b6b;
-  border-radius: 4px;
-  background-color: white;
-  color: #ff6b6b;
+  padding: 12px 22px;
+  border: 2px solid #FCA5A5;
+  border-radius: 12px;
+  background: white;
+  color: #EF4444;
   font-size: 14px;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.25s ease;
+  white-space: nowrap;
 }
 
 .favorites-button:hover {
-  background-color: #ffebee;
+  background: #FEF2F2;
+  border-color: #EF4444;
+  transform: translateY(-1px);
 }
 
 .favorites-button.active {
-  background-color: #ff6b6b;
+  background: #EF4444;
   color: white;
+  border-color: #EF4444;
+  box-shadow: 0 4px 14px rgba(239, 68, 68, 0.3);
 }
 
+/* ===== 商品列表 ===== */
 .products-section h3 {
-  color: #333;
+  color: #4C1D95;
   margin-bottom: 20px;
+  font-size: 20px;
+  font-weight: 600;
 }
 
-.loading, .no-products {
+.loading {
   text-align: center;
-  padding: 60px 20px;
-  background-color: white;
-  border-radius: 8px;
-  color: #666;
+  padding: 80px 20px;
+  color: #7C3AED;
+  font-size: 16px;
+}
+
+.loading::after {
+  content: '';
+  display: block;
+  width: 36px;
+  height: 36px;
+  margin: 16px auto;
+  border: 3px solid #EDE9FE;
+  border-top-color: #7C3AED;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.no-products {
+  text-align: center;
+  padding: 80px 20px;
+  background: white;
+  border-radius: 18px;
+  color: #7C3AED;
+  opacity: 0.6;
+  font-size: 15px;
+  border: 2px dashed #EDE9FE;
 }
 
 .products-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+  gap: 24px;
 }
 
 .product-card {
-  background-color: white;
-  border-radius: 8px;
+  background: white;
+  border-radius: 18px;
   overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow: 0 2px 12px rgba(124, 58, 237, 0.06);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
+  border: 1px solid rgba(124, 58, 237, 0.06);
 }
 
 .product-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px rgba(124, 58, 237, 0.12);
+  border-color: rgba(124, 58, 237, 0.15);
 }
 
 .product-image {
   position: relative;
   height: 200px;
   overflow: hidden;
-  background-color: #f5f5f5;
+  background: linear-gradient(135deg, #FAF5FF, #EDE9FE);
   cursor: pointer;
 }
 
@@ -672,130 +823,185 @@ onMounted(async () => {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  transition: transform 0.4s ease;
+}
+
+.product-card:hover .product-image img {
+  transform: scale(1.05);
 }
 
 .category-tag {
   position: absolute;
-  top: 10px;
-  left: 10px;
-  background-color: #4CAF50;
+  top: 12px;
+  left: 12px;
+  background: linear-gradient(135deg, #7C3AED, #6D28D9);
   color: white;
-  padding: 4px 12px;
-  border-radius: 4px;
+  padding: 4px 14px;
+  border-radius: 20px;
   font-size: 12px;
+  font-weight: 500;
+  box-shadow: 0 2px 8px rgba(124, 58, 237, 0.3);
 }
 
 .favorite-button {
   position: absolute;
-  top: 10px;
-  right: 10px;
+  top: 12px;
+  right: 12px;
   width: 36px;
   height: 36px;
   border: none;
   border-radius: 50%;
-  background-color: rgba(255, 255, 255, 0.9);
-  color: #999;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(4px);
+  color: #D1D5DB;
   font-size: 18px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s;
+  transition: all 0.25s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 .favorite-button:hover {
-  background-color: rgba(244, 67, 54, 0.9);
-  color: white;
+  background: #FEE2E2;
+  color: #EF4444;
+  transform: scale(1.1);
 }
 
 .favorite-button.favorited {
-  background-color: #f44336;
+  background: #EF4444;
   color: white;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.35);
 }
 
 .product-info {
-  padding: 16px;
+  padding: 18px;
 }
 
 .product-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
+  gap: 8px;
 }
 
 .product-header h4 {
   margin: 0;
-  color: #333;
+  color: #1F2937;
   font-size: 16px;
+  font-weight: 600;
   cursor: pointer;
+  line-height: 1.3;
+  transition: color 0.2s;
+  flex: 1;
 }
 
 .product-header h4:hover {
-  color: #4CAF50;
+  color: #7C3AED;
 }
 
 .product-seller {
-  color: #999;
+  color: #8B5CF6;
   font-size: 12px;
-  margin: 4px 0 8px 0;
+  margin: 2px 0 8px 0;
+  font-weight: 500;
 }
 
 .product-actions {
   display: flex;
-  gap: 8px;
+  gap: 6px;
+  flex-shrink: 0;
 }
 
 .edit-button,
 .status-button,
 .delete-button {
-  padding: 4px 8px;
-  font-size: 12px;
+  padding: 5px 10px;
+  font-size: 11px;
   border: none;
-  border-radius: 4px;
+  border-radius: 8px;
   cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s ease;
 }
 
 .edit-button {
-  background-color: #2196F3;
+  background: #EDE9FE;
+  color: #7C3AED;
+}
+
+.edit-button:hover {
+  background: #7C3AED;
   color: white;
 }
 
 .status-button {
-  background-color: #FF9800;
+  background: #FEF3C7;
+  color: #D97706;
+}
+
+.status-button:hover {
+  background: #D97706;
   color: white;
 }
 
 .delete-button {
-  background-color: #f44336;
+  background: #FEE2E2;
+  color: #EF4444;
+}
+
+.delete-button:hover {
+  background: #EF4444;
   color: white;
 }
 
 .product-description {
-  color: #666;
-  font-size: 14px;
+  color: #6B7280;
+  font-size: 13px;
   margin-bottom: 12px;
-  line-height: 1.4;
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .product-price {
-  color: #f44336;
-  font-size: 18px;
-  font-weight: bold;
+  color: #7C3AED;
+  font-size: 20px;
+  font-weight: 700;
   margin: 0;
+}
+
+.product-price::before {
+  content: '¥';
+  font-size: 14px;
 }
 
 .contact-seller-btn {
   width: 100%;
-  margin-top: 12px;
-  padding: 8px 16px;
-  background-color: #FF9800;
+  margin-top: 14px;
+  padding: 10px 16px;
+  background: linear-gradient(135deg, #22C55E, #16A34A);
   color: white;
   border: none;
-  border-radius: 4px;
+  border-radius: 12px;
   font-size: 13px;
+  font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: all 0.25s ease;
+  box-shadow: 0 4px 14px rgba(34, 197, 94, 0.25);
+}
+
+.contact-seller-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(34, 197, 94, 0.35);
+}
+
+.contact-seller-btn:active {
+  transform: translateY(0);
 }
 
 .contact-seller-btn:hover {
