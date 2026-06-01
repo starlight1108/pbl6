@@ -273,3 +273,59 @@ class Notification(db.Model):
             'is_read': self.is_read,
             'created_at': self.created_at.isoformat()
         }
+
+
+class Order(db.Model):
+    __tablename__ = 'orders'
+
+    id = db.Column(db.Integer, primary_key=True)
+    product_id = db.Column(db.Integer, db.ForeignKey('products.id'), nullable=False)
+    buyer_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    seller_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    final_price = db.Column(db.Numeric(10, 2), nullable=False)
+    status = db.Column(db.String(20), default='pending')
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    product = db.relationship('Product')
+    buyer = db.relationship('User', foreign_keys=[buyer_id])
+    seller = db.relationship('User', foreign_keys=[seller_id])
+
+    def to_dict(self):
+        default_image = '/static/images/default-product.png'
+        product_image = f'/uploads/products/{self.product.image}' if self.product and self.product.image else default_image
+
+        buyer_info = None
+        if self.buyer:
+            buyer_info = {
+                'id': self.buyer.id,
+                'nickname': self.buyer.nickname,
+                'avatar': f'/uploads/avatars/{self.buyer.avatar}' if self.buyer.avatar else '/static/images/default-avatar.png'
+            }
+
+        seller_info = None
+        if self.seller:
+            seller_info = {
+                'id': self.seller.id,
+                'nickname': self.seller.nickname,
+                'avatar': f'/uploads/avatars/{self.seller.avatar}' if self.seller.avatar else '/static/images/default-avatar.png'
+            }
+
+        return {
+            'id': self.id,
+            'product_id': self.product_id,
+            'product': {
+                'id': self.product.id,
+                'title': self.product.title,
+                'image': product_image,
+                'price': float(self.product.price) if self.product.price else None
+            } if self.product else None,
+            'buyer_id': self.buyer_id,
+            'buyer': buyer_info,
+            'seller_id': self.seller_id,
+            'seller': seller_info,
+            'final_price': float(self.final_price) if self.final_price else None,
+            'status': self.status,
+            'created_at': self.created_at.isoformat(),
+            'updated_at': self.updated_at.isoformat()
+        }
