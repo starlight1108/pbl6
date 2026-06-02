@@ -3,6 +3,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useProductStore } from '../stores/product.js'
 import { useUserStore } from '../stores/user.js'
+import ReportModal from '../components/ReportModal.vue'
 
 const router = useRouter()
 const productStore = useProductStore()
@@ -11,6 +12,8 @@ const userStore = useUserStore()
 const searchKeyword = ref('')
 const selectedCategory = ref('')
 const categories = ['书籍教材', '电子数码', '生活用品', '交通工具', '体育用品', '服饰鞋包', '美妆护肤', '其他']
+const showReportModal = ref(false)
+const selectedProduct = ref(null)
 
 const handleSearch = async () => {
   await productStore.fetchProducts(1, 20, selectedCategory.value, searchKeyword.value)
@@ -30,6 +33,20 @@ const goToPublish = () => {
     return
   }
   router.push('/products/publish')
+}
+
+const handleReport = (product, event) => {
+  event.stopPropagation()
+  if (!userStore.isLoggedIn) {
+    router.push('/login')
+    return
+  }
+  if (userStore.id === product.seller_id) {
+    alert('不能举报自己的商品')
+    return
+  }
+  selectedProduct.value = product
+  showReportModal.value = true
 }
 
 onMounted(async () => {
@@ -77,6 +94,14 @@ onMounted(async () => {
         >
           <div class="product-image">
             <span class="category-tag">{{ product.category }}</span>
+            <button 
+              v-if="userStore.isLoggedIn && userStore.id !== product.seller_id"
+              @click="handleReport(product, $event)"
+              class="report-icon-btn"
+              title="举报商品"
+            >
+              ⚠
+            </button>
           </div>
           <div class="product-info">
             <h3 class="product-title">{{ product.title }}</h3>
@@ -102,6 +127,14 @@ onMounted(async () => {
         </button>
       </div>
     </div>
+
+    <ReportModal 
+      v-if="showReportModal && selectedProduct"
+      :productId="selectedProduct.id"
+      :productTitle="selectedProduct.title"
+      @close="showReportModal = false; selectedProduct = null"
+      @success="showReportModal = false; selectedProduct = null"
+    />
   </div>
 </template>
 
@@ -262,7 +295,7 @@ onMounted(async () => {
   background: linear-gradient(135deg, #FAF5FF, #EDE9FE);
   display: flex;
   align-items: flex-start;
-  justify-content: flex-end;
+  justify-content: space-between;
   padding: 10px;
 }
 
@@ -273,6 +306,26 @@ onMounted(async () => {
   border-radius: 20px;
   font-size: 12px;
   font-weight: 500;
+}
+
+.report-icon-btn {
+  background-color: #f44336;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 16px;
+  transition: all 0.2s;
+}
+
+.report-icon-btn:hover {
+  background-color: #d32f2f;
+  transform: scale(1.1);
 }
 
 .product-info {

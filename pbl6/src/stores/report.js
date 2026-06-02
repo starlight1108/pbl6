@@ -8,7 +8,8 @@ export const useReportStore = defineStore('report', {
     reports: [],
     total: 0,
     pages: 0,
-    currentPage: 1
+    currentPage: 1,
+    reasons: []
   }),
   
   actions: {
@@ -20,6 +21,17 @@ export const useReportStore = defineStore('report', {
       }
     },
     
+    async fetchReasons() {
+      try {
+        const response = await fetch(`${API_BASE_URL}/reports/reasons`)
+        const data = await response.json()
+        this.reasons = data.reasons
+        return data.reasons
+      } catch (error) {
+        throw error
+      }
+    },
+    
     async createReport(productId, reason, description = '') {
       try {
         const response = await fetch(`${API_BASE_URL}/reports`, {
@@ -27,8 +39,8 @@ export const useReportStore = defineStore('report', {
           headers: this.getAuthHeaders(),
           body: JSON.stringify({
             product_id: productId,
-            reason,
-            description
+            reason: reason,
+            description: description
           })
         })
         
@@ -70,42 +82,19 @@ export const useReportStore = defineStore('report', {
       }
     },
     
-    async checkReported(productId) {
+    async fetchReport(reportId) {
       try {
-        const response = await fetch(`${API_BASE_URL}/reports/check/${productId}`, {
+        const response = await fetch(`${API_BASE_URL}/reports/${reportId}`, {
           headers: this.getAuthHeaders()
         })
         
         const data = await response.json()
         
         if (!response.ok) {
-          throw new Error(data.error || '检查举报状态失败')
+          throw new Error(data.error || '获取举报详情失败')
         }
         
-        return data.has_reported
-      } catch (error) {
-        throw error
-      }
-    },
-    
-    async processReport(reportId, status, action = null) {
-      try {
-        const response = await fetch(`${API_BASE_URL}/reports/${reportId}/process`, {
-          method: 'PUT',
-          headers: this.getAuthHeaders(),
-          body: JSON.stringify({
-            status,
-            action
-          })
-        })
-        
-        const data = await response.json()
-        
-        if (!response.ok) {
-          throw new Error(data.error || '处理举报失败')
-        }
-        
-        return data
+        return data.report
       } catch (error) {
         throw error
       }
