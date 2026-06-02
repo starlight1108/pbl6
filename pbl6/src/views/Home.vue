@@ -73,6 +73,11 @@ const handleMyProducts = () => {
   isDropdownOpen.value = false
 }
 
+const handleMyOrders = () => {
+  router.push('/my-orders')
+  isDropdownOpen.value = false
+}
+
 const handleChat = () => {
   router.push('/chat')
   isDropdownOpen.value = false
@@ -324,6 +329,10 @@ onMounted(async () => {
               <button @click="handleMyProducts" class="dropdown-item my-products-item">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/></svg>
                 我发布的
+              </button>
+              <button @click="handleMyOrders" class="dropdown-item my-orders-item">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 14l2 2 4-4"/></svg>
+                我的订单
               </button>
               <button @click="handleChat" class="dropdown-item chat-item">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
