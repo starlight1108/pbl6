@@ -50,6 +50,8 @@ npm run test:e2e:chat
 | `auth.flow.spec.js` | 🔐 认证流程 | 注册、登录、退出、表单验证、会话持久化、未登录重定向 |
 | `product.flow.spec.js` | 📦 商品流程 | 发布商品、搜索、分类筛选、排序、详情查看、收藏、管理 |
 | `chat.flow.spec.js` | 💬 聊天流程 | 聊天列表、联系卖家、发送消息、会话管理 |
+| `order.flow.spec.js` | 📋 交易流程 | 发布商品、联系卖家、发起交易、订单列表、订单详情、取消订单 |
+| `sold-product.flow.spec.js` | 🔍 已售商品过滤 | 商品交易前可见 → 交易完成后自动从首页消失 |
 
 ## 🛠️ 调试模式
 
