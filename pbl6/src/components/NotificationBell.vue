@@ -4,15 +4,25 @@ import { useRouter } from 'vue-router'
 import { useNotificationStore } from '../stores/notification.js'
 import { useChatStore } from '../stores/chat.js'
 import { useUserStore } from '../stores/user.js'
+import { useReportStore } from '../stores/report.js'
 
 const router = useRouter()
 const notificationStore = useNotificationStore()
 const chatStore = useChatStore()
 const userStore = useUserStore()
+const reportStore = useReportStore()
 
 const showDropdown = ref(false)
 const activeTab = ref('notification')
 let pollingInterval = null
+
+const reportNotifications = computed(() => {
+  return notificationStore.notifications.filter(n => n.type === 'report')
+})
+
+const reportUnreadCount = computed(() => {
+  return reportNotifications.value.filter(n => !n.is_read).length
+})
 
 const totalUnread = computed(() => {
   return (notificationStore.unreadCount || 0) + (chatStore.totalUnreadCount || 0)
@@ -47,22 +57,6 @@ const goToReports = () => {
   showDropdown.value = false
 }
 
-const handleNotificationItemClick = async (notification) => {
-  if (!notification.is_read) {
-    await notificationStore.markAsRead(notification.id)
-  }
-  
-  if (notification.related_type === 'product' && notification.related_id) {
-    router.push(`/products/${notification.related_id}`)
-    showDropdown.value = false
-  } else if (notification.related_type === 'report' && notification.related_id) {
-    router.push('/reports')
-    showDropdown.value = false
-  } else {
-    goToNotifications()
-  }
-}
-
 const handleMarkAllRead = async () => {
   await notificationStore.markAllAsRead()
 }
@@ -81,11 +75,9 @@ const formatTime = (dateString) => {
 const startPolling = () => {
   if (userStore.isLoggedIn) {
     notificationStore.fetchUnreadCount()
-    notificationStore.fetchNotifications(1, 10)
     chatStore.loadConversations()
     pollingInterval = setInterval(() => {
       notificationStore.fetchUnreadCount()
-      notificationStore.fetchNotifications(1, 10)
       chatStore.loadConversations()
     }, 30000)
   }
@@ -139,6 +131,13 @@ onUnmounted(() => {
           消息
           <span v-if="chatStore.totalUnreadCount > 0" class="tab-badge">{{ chatStore.totalUnreadCount }}</span>
         </button>
+        <button 
+          :class="['tab', { active: activeTab === 'report' }]" 
+          @click="activeTab = 'report'"
+        >
+          举报
+          <span v-if="reportUnreadCount > 0" class="tab-badge">{{ reportUnreadCount }}</span>
+        </button>
       </div>
       
       <div class="dropdown-content">
@@ -151,7 +150,6 @@ onUnmounted(() => {
               v-for="notification in notificationStore.notifications.slice(0, 5)" 
               :key="notification.id"
               :class="['item', { unread: !notification.is_read }]"
-              @click="handleNotificationItemClick(notification)"
             >
               <div class="item-content">
                 <div class="item-title">{{ notification.title }}</div>
@@ -184,6 +182,30 @@ onUnmounted(() => {
             </div>
           </div>
         </div>
+
+        <div v-if="activeTab === 'report'">
+          <div v-if="reportNotifications.length === 0" class="empty">
+            暂无举报通知
+          </div>
+          <div v-else class="items">
+            <div 
+              v-for="notification in reportNotifications.slice(0, 5)" 
+              :key="notification.id"
+              :class="['item', { unread: !notification.is_read }]"
+              @click="goToReports"
+            >
+              <div class="item-content">
+                <div class="item-title">
+                  <span class="report-icon">⚠</span>
+                  {{ notification.title }}
+                </div>
+                <div class="item-subtitle">{{ notification.content }}</div>
+                <div class="item-time">{{ formatTime(notification.created_at) }}</div>
+              </div>
+              <span v-if="!notification.is_read" class="unread-dot"></span>
+            </div>
+          </div>
+        </div>
       </div>
       
       <div class="dropdown-footer">
@@ -192,6 +214,9 @@ onUnmounted(() => {
         </button>
         <button v-if="activeTab === 'chat'" @click="goToChat" class="view-all-btn">
           查看全部消息
+        </button>
+        <button v-if="activeTab === 'report'" @click="goToReports" class="view-all-btn">
+          查看全部举报
         </button>
       </div>
     </div>
@@ -332,6 +357,14 @@ onUnmounted(() => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.report-icon {
+  color: #f44336;
+  font-size: 16px;
 }
 
 .item-subtitle {
@@ -340,6 +373,7 @@ onUnmounted(() => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  margin-bottom: 2px;
 }
 
 .item-time {

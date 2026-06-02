@@ -51,7 +51,7 @@ const router = createRouter({
     {
       path: '/reports',
       name: 'reports',
-      component: () => import('../views/MyReports.vue')
+      component: () => import('../views/Reports.vue')
     },
     {
       path: '/chat',

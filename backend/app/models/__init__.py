@@ -234,7 +234,7 @@ class Report(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     reporter_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     product_id = db.Column(db.Integer, db.ForeignKey('products.id'), nullable=False)
-    reason = db.Column(db.String(500), nullable=False)
+    reason = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text)
     status = db.Column(db.String(20), default='pending')
     result = db.Column(db.Text)
@@ -247,15 +247,19 @@ class Report(db.Model):
     handler = db.relationship('User', foreign_keys=[handled_by])
 
     def to_dict(self):
+        product_info = None
+        if self.product:
+            product_info = {
+                'id': self.product.id,
+                'title': self.product.title,
+                'image': f'/uploads/products/{self.product.image}' if self.product.image else '/static/images/default-product.png'
+            }
+
         return {
             'id': self.id,
             'reporter_id': self.reporter_id,
-            'reporter': {
-                'id': self.reporter.id,
-                'nickname': self.reporter.nickname
-            } if self.reporter else None,
             'product_id': self.product_id,
-            'product': self.product.to_dict() if self.product else None,
+            'product': product_info,
             'reason': self.reason,
             'description': self.description,
             'status': self.status,

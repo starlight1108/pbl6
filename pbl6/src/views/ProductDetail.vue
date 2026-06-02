@@ -14,7 +14,6 @@ const newComment = ref('')
 const isLoading = ref(true)
 const isSubmitting = ref(false)
 const showReportModal = ref(false)
-const reportSuccess = ref(false)
 
 const fetchProduct = async () => {
   const productId = route.params.id
@@ -143,15 +142,6 @@ const contactSeller = async () => {
   }
 }
 
-const handleReport = () => {
-  showReportModal.value = true
-}
-
-const handleReportSuccess = () => {
-  reportSuccess.value = true
-  alert('举报成功，我们会尽快处理')
-}
-
 const formatDate = (dateString) => {
   const date = new Date(dateString)
   return date.toLocaleString('zh-CN', {
@@ -197,12 +187,20 @@ onMounted(() => {
           <p class="product-date">发布时间：{{ formatDate(product.created_at) }}</p>
           <p class="product-description">{{ product.description }}</p>
           
-          <div v-if="userStore.token" class="product-actions">
-            <button v-if="userStore.id !== product.seller_id" @click="contactSeller" class="contact-btn">联系卖家</button>
-            <button v-if="userStore.id !== product.seller_id" @click="handleReport" class="report-btn">举报商品</button>
+          <div v-if="userStore.token && userStore.id !== product.seller_id" class="product-actions">
+            <button @click="contactSeller" class="contact-btn">联系卖家</button>
+            <button @click="showReportModal = true" class="report-btn">举报商品</button>
           </div>
         </div>
       </div>
+
+      <ReportModal 
+        v-if="showReportModal"
+        :productId="product.id"
+        :productTitle="product.title"
+        @close="showReportModal = false"
+        @success="showReportModal = false"
+      />
 
       <div class="comments-section">
         <h3>商品评论 ({{ comments.length }})</h3>
@@ -248,14 +246,6 @@ onMounted(() => {
         </div>
       </div>
     </div>
-    
-    <ReportModal 
-      :visible="showReportModal"
-      :productId="product?.id"
-      :productTitle="product?.title"
-      @close="showReportModal = false"
-      @success="handleReportSuccess"
-    />
   </div>
 </template>
 
@@ -393,6 +383,7 @@ onMounted(() => {
   cursor: pointer;
   transition: background-color 0.2s;
   font-weight: 500;
+  margin-right: 10px;
 }
 
 .contact-btn:hover {
@@ -409,7 +400,6 @@ onMounted(() => {
   cursor: pointer;
   transition: background-color 0.2s;
   font-weight: 500;
-  margin-left: 10px;
 }
 
 .report-btn:hover {
