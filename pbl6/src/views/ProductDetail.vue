@@ -2,6 +2,7 @@
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '../stores/user.js'
+import ReportModal from '../components/ReportModal.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -12,6 +13,7 @@ const comments = ref([])
 const newComment = ref('')
 const isLoading = ref(true)
 const isSubmitting = ref(false)
+const showReportModal = ref(false)
 
 // 议价相关状态
 const showOfferModal = ref(false)
@@ -487,10 +489,18 @@ onMounted(() => {
 
           <div v-if="userStore.token && userStore.id !== product.seller_id" class="product-actions">
             <button @click="contactSeller" class="contact-btn">联系卖家</button>
-
+            <button @click="showReportModal = true" class="report-btn">举报商品</button>
           </div>
         </div>
       </div>
+
+      <ReportModal 
+        v-if="showReportModal"
+        :productId="product.id"
+        :productTitle="product.title"
+        @close="showReportModal = false"
+        @success="showReportModal = false"
+      />
 
       <div class="comments-section">
         <h3>商品评论 ({{ comments.length }})</h3>
@@ -902,6 +912,7 @@ onMounted(() => {
   cursor: pointer;
   transition: all 0.25s ease;
   box-shadow: 0 4px 14px rgba(34, 197, 94, 0.25);
+  margin-right: 10px;
 }
 
 .contact-btn:hover {
@@ -909,7 +920,24 @@ onMounted(() => {
   box-shadow: 0 8px 25px rgba(34, 197, 94, 0.35);
 }
 
-/* 评论区 */
+.report-btn {
+  padding: 12px 32px;
+  background: linear-gradient(135deg, #EF4444, #DC2626);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  font-weight: 600;
+  box-shadow: 0 4px 14px rgba(239, 68, 68, 0.25);
+}
+
+.report-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 25px rgba(239, 68, 68, 0.35);
+}
+
 .comments-section {
   background: white;
   border-radius: 20px;

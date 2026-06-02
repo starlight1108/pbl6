@@ -273,3 +273,45 @@ class Notification(db.Model):
             'is_read': self.is_read,
             'created_at': self.created_at.isoformat()
         }
+
+
+class Report(db.Model):
+    __tablename__ = 'reports'
+
+    id = db.Column(db.Integer, primary_key=True)
+    reporter_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    product_id = db.Column(db.Integer, db.ForeignKey('products.id'), nullable=False)
+    reason = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.Text)
+    status = db.Column(db.String(20), default='pending')
+    result = db.Column(db.Text)
+    handled_by = db.Column(db.Integer, db.ForeignKey('users.id'))
+    handled_at = db.Column(db.DateTime)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    reporter = db.relationship('User', foreign_keys=[reporter_id])
+    product = db.relationship('Product')
+    handler = db.relationship('User', foreign_keys=[handled_by])
+
+    def to_dict(self):
+        product_info = None
+        if self.product:
+            product_info = {
+                'id': self.product.id,
+                'title': self.product.title,
+                'image': f'/uploads/products/{self.product.image}' if self.product.image else '/static/images/default-product.png'
+            }
+
+        return {
+            'id': self.id,
+            'reporter_id': self.reporter_id,
+            'product_id': self.product_id,
+            'product': product_info,
+            'reason': self.reason,
+            'description': self.description,
+            'status': self.status,
+            'result': self.result,
+            'handled_by': self.handled_by,
+            'handled_at': self.handled_at.isoformat() if self.handled_at else None,
+            'created_at': self.created_at.isoformat()
+        }
