@@ -2,7 +2,19 @@ from flask import request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from . import api_bp
 from .. import db
-from ..models import Report, Product, User, Notification
+from ..models import Report, Product, Notification
+from datetime import datetime
+
+
+REPORT_REASONS = [
+    '虚假信息',
+    '欺诈行为',
+    '违禁商品',
+    '侵权商品',
+    '价格异常',
+    '重复发布',
+    '其他原因'
+]
 
 
 @api_bp.route('/reports', methods=['POST'])
@@ -15,31 +27,31 @@ def create_report():
     reason = data.get('reason')
     description = data.get('description', '')
     
-    if not product_id or not reason:
-        return jsonify({'error': '商品ID和举报原因不能为空'}), 400
+    if not product_id:
+        return jsonify({'error': '商品ID不能为空'}), 400
+    
+    if not reason:
+        return jsonify({'error': '举报原因不能为空'}), 400
     
     product = Product.query.get(product_id)
     if not product:
         return jsonify({'error': '商品不存在'}), 404
     
-    if product.seller_id == user_id:
-        return jsonify({'error': '不能举报自己的商品'}), 400
-    
     existing_report = Report.query.filter_by(
+        reporter_id=user_id,
         product_id=product_id,
-        reporter_id=user_id
+        status='pending'
     ).first()
     
     if existing_report:
-        return jsonify({'error': '您已经举报过该商品'}), 400
+        return jsonify({'error': '您已举报过该商品，请等待处理'}), 400
     
     report = Report(
-        product_id=product_id,
         reporter_id=user_id,
+        product_id=product_id,
         reason=reason,
         description=description
     )
-    
     db.session.add(report)
     db.session.commit()
     
@@ -53,6 +65,57 @@ def create_report():
 @jwt_required()
 def get_reports():
     user_id = int(get_jwt_identity())
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 20, type=int)
+    status = request.args.get('status')
+    
+    query = Report.query.filter_by(reporter_id=user_id)
+    
+    if status:
+        query = query.filter_by(status=status)
+    
+    pagination = query.order_by(Report.created_at.desc()).paginate(
+        page=page, per_page=per_page, error_out=False
+    )
+    
+    return jsonify({
+        'reports': [r.to_dict() for r in pagination.items],
+        'total': pagination.total,
+        'pages': pagination.pages,
+        'current_page': page
+    })
+
+
+@api_bp.route('/reports/<int:report_id>', methods=['GET'])
+@jwt_required()
+def get_report(report_id):
+    user_id = int(get_jwt_identity())
+    
+    report = Report.query.get(report_id)
+    
+    if not report:
+        return jsonify({'error': '举报记录不存在'}), 404
+    
+    if report.reporter_id != user_id:
+        return jsonify({'error': '无权查看此举报'}), 403
+    
+    return jsonify({
+        'report': report.to_dict()
+    })
+
+
+@api_bp.route('/reports/reasons', methods=['GET'])
+def get_report_reasons():
+    return jsonify({
+        'reasons': REPORT_REASONS
+    })
+
+
+@api_bp.route('/admin/reports', methods=['GET'])
+@jwt_required()
+def admin_get_reports():
+    user_id = int(get_jwt_identity())
+    
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 20, type=int)
     status = request.args.get('status')
@@ -74,89 +137,46 @@ def get_reports():
     })
 
 
-@api_bp.route('/reports/<int:report_id>', methods=['GET'])
+@api_bp.route('/admin/reports/<int:report_id>/handle', methods=['PUT'])
 @jwt_required()
-def get_report(report_id):
-    report = Report.query.get(report_id)
-    
-    if not report:
-        return jsonify({'error': '举报记录不存在'}), 404
-    
-    return jsonify({
-        'report': report.to_dict()
-    })
-
-
-@api_bp.route('/reports/<int:report_id>/process', methods=['PUT'])
-@jwt_required()
-def process_report(report_id):
+def admin_handle_report(report_id):
     user_id = int(get_jwt_identity())
     data = request.get_json()
     
-    new_status = data.get('status')
-    action = data.get('action')
+    status = data.get('status')
+    result = data.get('result', '')
     
-    if new_status not in ['approved', 'rejected']:
-        return jsonify({'error': '无效的状态'}), 400
+    if status not in ['approved', 'rejected']:
+        return jsonify({'error': '无效的处理状态'}), 400
     
     report = Report.query.get(report_id)
     
     if not report:
         return jsonify({'error': '举报记录不存在'}), 404
     
-    report.status = new_status
+    report.status = status
+    report.result = result
+    report.handled_by = user_id
+    report.handled_at = datetime.utcnow()
     
-    if new_status == 'approved' and action == 'remove_product':
+    if status == 'approved':
         product = Product.query.get(report.product_id)
         if product:
             product.status = 'removed'
-            
-            Notification(
-                user_id=product.seller_id,
-                type='system',
-                title='商品已被下架',
-                content=f'您的商品"{product.title}"因违规已被下架',
-                related_id=product.id,
-                related_type='product'
-            )
     
-    if new_status == 'approved':
-        Notification(
-            user_id=report.reporter_id,
-            type='system',
-            title='举报已处理',
-            content=f'您举报的商品"{report.product.title}"已处理',
-            related_id=report.product_id,
-            related_type='product'
-        )
-    elif new_status == 'rejected':
-        Notification(
-            user_id=report.reporter_id,
-            type='system',
-            title='举报已处理',
-            content=f'您举报的商品"{report.product.title}"未发现违规',
-            related_id=report.product_id,
-            related_type='product'
-        )
+    notification = Notification(
+        user_id=report.reporter_id,
+        type='report',
+        title=f'举报处理结果：{report.product.title if report.product else "商品"}',
+        content=f'您的举报已处理，处理结果：{result}',
+        related_id=report.id,
+        related_type='report'
+    )
+    db.session.add(notification)
     
     db.session.commit()
     
     return jsonify({
-        'message': '举报已处理',
+        'message': '处理成功',
         'report': report.to_dict()
-    })
-
-
-@api_bp.route('/reports/check/<int:product_id>', methods=['GET'])
-@jwt_required()
-def check_reported(product_id):
-    user_id = int(get_jwt_identity())
-    
-    report = Report.query.filter_by(
-        product_id=product_id,
-        reporter_id=user_id
-    ).first()
-    
-    return jsonify({
-        'has_reported': report is not None
     })
