@@ -166,38 +166,50 @@ onMounted(async () => {
 <style scoped>
 .notifications-container {
   min-height: 100vh;
-  background-color: #f5f5f5;
+  background: linear-gradient(135deg, #FAF5FF 0%, #F3E8FF 100%);
+  font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif;
 }
 
 .header {
-  background-color: white;
-  padding: 20px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  padding: 16px 24px;
+  box-shadow: 0 1px 3px rgba(124, 58, 237, 0.08);
   display: flex;
   justify-content: space-between;
   align-items: center;
+  border-bottom: 1px solid rgba(124, 58, 237, 0.1);
 }
 
 .header h1 {
-  color: #333;
+  background: linear-gradient(135deg, #7C3AED, #A78BFA);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
   margin: 0;
-  font-size: 24px;
+  font-size: 22px;
+  font-weight: 700;
 }
 
 .mark-all-btn {
-  padding: 8px 16px;
-  background-color: #4CAF50;
+  padding: 8px 20px;
+  background: linear-gradient(135deg, #7C3AED, #6D28D9);
   color: white;
   border: none;
-  border-radius: 4px;
+  border-radius: 10px;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 13px;
+  font-weight: 600;
+  transition: all 0.25s ease;
+  box-shadow: 0 4px 14px rgba(124, 58, 237, 0.25);
 }
 
-.mark-all-btn:disabled {
-  background-color: #ccc;
-  cursor: not-allowed;
+.mark-all-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(124, 58, 237, 0.35);
 }
+
+.mark-all-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; }
 
 .content {
   max-width: 800px;
@@ -212,27 +224,34 @@ onMounted(async () => {
 }
 
 .filter-btn {
-  padding: 8px 16px;
-  background-color: white;
-  border: 1px solid #ddd;
+  padding: 8px 20px;
+  background: white;
+  border: 2px solid #EDE9FE;
   border-radius: 20px;
   cursor: pointer;
   font-size: 14px;
-  transition: all 0.3s;
+  font-weight: 600;
+  color: #7C3AED;
+  transition: all 0.25s ease;
 }
 
+.filter-btn:hover { background: #FAF5FF; border-color: #7C3AED; }
+
 .filter-btn.active {
-  background-color: #4CAF50;
+  background: linear-gradient(135deg, #7C3AED, #6D28D9);
   color: white;
-  border-color: #4CAF50;
+  border-color: #7C3AED;
+  box-shadow: 0 4px 14px rgba(124, 58, 237, 0.25);
 }
 
 .empty-message {
   text-align: center;
-  padding: 60px 20px;
-  background-color: white;
-  border-radius: 8px;
-  color: #999;
+  padding: 80px 20px;
+  background: white;
+  border-radius: 18px;
+  color: #7C3AED;
+  opacity: 0.6;
+  border: 2px dashed #EDE9FE;
 }
 
 .notification-list {
@@ -242,30 +261,32 @@ onMounted(async () => {
 }
 
 .notification-item {
-  background-color: white;
-  border-radius: 8px;
-  padding: 15px;
+  background: white;
+  border-radius: 16px;
+  padding: 16px 18px;
   display: flex;
   align-items: flex-start;
-  gap: 15px;
+  gap: 14px;
   cursor: pointer;
-  transition: all 0.2s;
-  border-left: 3px solid transparent;
+  transition: all 0.25s ease;
+  border: 1px solid rgba(124, 58, 237, 0.06);
+  border-left: 4px solid transparent;
 }
 
 .notification-item:hover {
-  background-color: #f9f9f9;
+  border-color: rgba(124, 58, 237, 0.15);
+  transform: translateX(3px);
 }
 
 .notification-item.unread {
-  border-left-color: #4CAF50;
-  background-color: #f0f9f0;
+  border-left-color: #7C3AED;
+  background: #FAF5FF;
 }
 
 .notification-icon {
   width: 40px;
   height: 40px;
-  border-radius: 50%;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -274,10 +295,7 @@ onMounted(async () => {
   flex-shrink: 0;
 }
 
-.notification-content {
-  flex: 1;
-  min-width: 0;
-}
+.notification-content { flex: 1; min-width: 0; }
 
 .notification-header {
   display: flex;
@@ -286,25 +304,19 @@ onMounted(async () => {
   margin-bottom: 5px;
 }
 
-.notification-type {
-  font-size: 12px;
-  font-weight: bold;
-}
-
-.notification-time {
-  font-size: 12px;
-  color: #999;
-}
+.notification-type { font-size: 12px; font-weight: 700; }
+.notification-time { font-size: 12px; color: #A78BFA; }
 
 .notification-title {
-  font-size: 16px;
-  color: #333;
-  margin: 0 0 5px 0;
+  font-size: 15px;
+  color: #1F2937;
+  margin: 0 0 4px 0;
+  font-weight: 600;
 }
 
 .notification-text {
-  font-size: 14px;
-  color: #666;
+  font-size: 13px;
+  color: #6B7280;
   margin: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -320,23 +332,27 @@ onMounted(async () => {
 .unread-dot {
   width: 10px;
   height: 10px;
-  background-color: #4CAF50;
+  background: #7C3AED;
   border-radius: 50%;
+  box-shadow: 0 0 6px rgba(124, 58, 237, 0.4);
 }
 
 .delete-btn {
-  width: 24px;
-  height: 24px;
+  width: 28px;
+  height: 28px;
   border: none;
-  background-color: transparent;
-  color: #999;
-  font-size: 18px;
+  background: #FEE2E2;
+  color: #EF4444;
+  font-size: 16px;
   cursor: pointer;
-  border-radius: 50%;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: all 0.2s;
 }
+
+.delete-btn:hover { background: #EF4444; color: white; }
 
 .delete-btn:hover {
   background-color: #f44336;

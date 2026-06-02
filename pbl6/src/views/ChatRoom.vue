@@ -191,28 +191,42 @@ watch(() => chatStore.currentMessages.length, () => {
 <style scoped>
 .chat-room-container {
   height: 100vh;
-  background-color: #f5f5f5;
+  background: linear-gradient(135deg, #FAF5FF 0%, #F3E8FF 100%);
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif;
 }
 
 .header {
-  background-color: white;
-  padding: 16px 20px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  padding: 14px 20px;
+  box-shadow: 0 1px 3px rgba(124, 58, 237, 0.08);
   display: flex;
   align-items: center;
   gap: 12px;
+  border-bottom: 1px solid rgba(124, 58, 237, 0.1);
 }
 
 .back-button {
-  background: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #EDE9FE;
   border: none;
   font-size: 16px;
-  color: #333;
+  color: #7C3AED;
   cursor: pointer;
-  padding: 4px 8px;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  transition: all 0.2s;
+}
+
+.back-button:hover {
+  background: #7C3AED;
+  color: white;
 }
 
 .header-user {
@@ -227,11 +241,12 @@ watch(() => chatStore.currentMessages.length, () => {
   height: 40px;
   border-radius: 50%;
   object-fit: cover;
+  border: 2px solid #A78BFA;
 }
 
 .header-nickname {
   font-weight: 600;
-  color: #333;
+  color: #4C1D95;
   font-size: 15px;
 }
 
@@ -241,29 +256,21 @@ watch(() => chatStore.currentMessages.length, () => {
   gap: 8px;
 }
 
-.online-text {
-  color: #4CAF50;
-}
-
-.offline-text {
-  color: #999;
-}
-
-.typing-text {
-  color: #2196F3;
-  font-style: italic;
-}
+.online-text { color: #22C55E; font-weight: 600; }
+.offline-text { color: #9CA3AF; }
+.typing-text { color: #7C3AED; font-style: italic; }
 
 .product-info {
   font-size: 12px;
-  color: #4CAF50;
-  background-color: #E8F5E9;
+  color: #7C3AED;
+  background: #EDE9FE;
   padding: 4px 12px;
-  border-radius: 4px;
+  border-radius: 20px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 150px;
+  font-weight: 500;
 }
 
 .messages {
@@ -277,7 +284,8 @@ watch(() => chatStore.currentMessages.length, () => {
 
 .loading, .empty-msg {
   text-align: center;
-  color: #999;
+  color: #7C3AED;
+  opacity: 0.6;
   padding: 40px;
 }
 
@@ -286,31 +294,27 @@ watch(() => chatStore.currentMessages.length, () => {
   max-width: 70%;
 }
 
-.message.self {
-  align-self: flex-end;
-}
-
-.message.other {
-  align-self: flex-start;
-}
+.message.self { align-self: flex-end; }
+.message.other { align-self: flex-start; }
 
 .message-content {
-  padding: 10px 14px;
-  border-radius: 12px;
+  padding: 12px 16px;
+  border-radius: 16px;
   position: relative;
 }
 
 .message.self .message-content {
-  background-color: #4CAF50;
+  background: linear-gradient(135deg, #7C3AED, #6D28D9);
   color: white;
   border-bottom-right-radius: 4px;
+  box-shadow: 0 2px 8px rgba(124, 58, 237, 0.25);
 }
 
 .message.other .message-content {
-  background-color: white;
-  color: #333;
+  background: white;
+  color: #374151;
   border-bottom-left-radius: 4px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
 .message-content p {
@@ -329,17 +333,18 @@ watch(() => chatStore.currentMessages.length, () => {
 }
 
 .input-bar {
-  background-color: white;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(12px);
   padding: 12px 16px;
   display: flex;
   gap: 10px;
   align-items: flex-end;
-  border-top: 1px solid #eee;
+  border-top: 1px solid rgba(124, 58, 237, 0.1);
 }
 
 .message-input {
   flex: 1;
-  border: 1px solid #ddd;
+  border: 2px solid #EDE9FE;
   border-radius: 20px;
   padding: 10px 16px;
   font-size: 14px;
@@ -347,30 +352,40 @@ watch(() => chatStore.currentMessages.length, () => {
   outline: none;
   min-height: 40px;
   max-height: 100px;
+  background: #FAF5FF;
+  transition: all 0.25s ease;
+  font-family: inherit;
 }
 
 .message-input:focus {
-  border-color: #4CAF50;
+  border-color: #7C3AED;
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.15);
+  background: white;
 }
 
 .send-button {
-  padding: 10px 20px;
-  background-color: #4CAF50;
+  padding: 10px 24px;
+  background: linear-gradient(135deg, #7C3AED, #6D28D9);
   color: white;
   border: none;
   border-radius: 20px;
   font-size: 14px;
+  font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: all 0.25s ease;
   flex-shrink: 0;
+  box-shadow: 0 4px 14px rgba(124, 58, 237, 0.25);
 }
 
 .send-button:hover:not(:disabled) {
-  background-color: #45a049;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(124, 58, 237, 0.35);
 }
 
 .send-button:disabled {
-  background-color: #ccc;
+  opacity: 0.5;
   cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none;
 }
 </style>

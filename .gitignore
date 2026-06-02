@@ -77,3 +77,12 @@ uploads/
 Thumbs.db
 .DS_Store
 backend/database.db
+document/测试用例.xlsx
+document/测试用例文档.md
+
+# Playwright E2E 测试
+pbl6/tests/test-results/
+pbl6/tests/playwright-report/
+pbl6/tests/playwright/.cache/
+pbl6/test-results/
+.github

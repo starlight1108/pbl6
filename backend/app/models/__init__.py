@@ -127,6 +127,53 @@ class Favorite(db.Model):
         }
 
 
+class Offer(db.Model):
+    __tablename__ = 'offers'
+
+    id = db.Column(db.Integer, primary_key=True)
+    product_id = db.Column(db.Integer, db.ForeignKey('products.id'), nullable=False)
+    buyer_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    seller_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    offered_price = db.Column(db.Numeric(10, 2), nullable=False)
+    original_price = db.Column(db.Numeric(10, 2), nullable=False)
+    status = db.Column(db.String(20), default='pending')
+    message = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    product = db.relationship('Product')
+    buyer = db.relationship('User', foreign_keys=[buyer_id])
+    seller = db.relationship('User', foreign_keys=[seller_id])
+
+    __table_args__ = (
+        db.UniqueConstraint('product_id', 'buyer_id', name='_product_buyer_unique'),
+    )
+
+    def to_dict(self):
+        buyer_info = None
+        if self.buyer:
+            buyer_info = {
+                'id': self.buyer.id,
+                'nickname': self.buyer.nickname,
+                'avatar': f'/static/avatars/{self.buyer.avatar}' if self.buyer.avatar else '/static/images/default-avatar.png'
+            }
+        
+        return {
+            'id': self.id,
+            'product_id': self.product_id,
+            'product': self.product.to_dict() if self.product else None,
+            'buyer_id': self.buyer_id,
+            'buyer': buyer_info,
+            'seller_id': self.seller_id,
+            'offered_price': float(self.offered_price) if self.offered_price else None,
+            'original_price': float(self.original_price) if self.original_price else None,
+            'status': self.status,
+            'message': self.message,
+            'created_at': self.created_at.isoformat(),
+            'updated_at': self.updated_at.isoformat()
+        }
+
+
 class ChatConversation(db.Model):
     __tablename__ = 'chat_conversations'
 

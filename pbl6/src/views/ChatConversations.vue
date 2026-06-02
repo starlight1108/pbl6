@@ -57,7 +57,9 @@ onUnmounted(() => {
 
     <div class="content">
       <div v-if="chatStore.conversations.length === 0" class="empty-state">
-        <div class="empty-icon">💬</div>
+        <div class="empty-icon">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#A78BFA" stroke-width="1.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        </div>
         <p>暂无消息</p>
         <p class="empty-hint">在商品详情页点击「联系卖家」开始聊天</p>
       </div>
@@ -95,37 +97,51 @@ onUnmounted(() => {
 <style scoped>
 .chat-list-container {
   min-height: 100vh;
-  background-color: #f5f5f5;
+  background: linear-gradient(135deg, #FAF5FF 0%, #F3E8FF 100%);
   display: flex;
   flex-direction: column;
+  font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif;
 }
 
 .header {
-  background-color: white;
-  padding: 20px 40px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  padding: 16px 24px;
+  box-shadow: 0 1px 3px rgba(124, 58, 237, 0.08);
   display: flex;
   align-items: center;
   gap: 16px;
+  border-bottom: 1px solid rgba(124, 58, 237, 0.1);
 }
 
 .back-button {
-  background: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #EDE9FE;
   border: none;
-  font-size: 16px;
-  color: #333;
+  font-size: 14px;
+  font-weight: 600;
+  color: #7C3AED;
   cursor: pointer;
-  padding: 8px 16px;
+  padding: 8px 14px;
+  border-radius: 10px;
+  transition: all 0.2s;
 }
 
 .back-button:hover {
-  color: #4CAF50;
+  background: #7C3AED;
+  color: white;
 }
 
 .header h1 {
   flex: 1;
-  color: #333;
+  background: linear-gradient(135deg, #7C3AED, #A78BFA);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
   font-size: 20px;
+  font-weight: 700;
   margin: 0;
 }
 
@@ -139,29 +155,22 @@ onUnmounted(() => {
   height: 10px;
   border-radius: 50%;
   display: inline-block;
+  box-shadow: 0 0 6px rgba(76, 175, 80, 0.4);
 }
 
-.status-dot.online {
-  background-color: #4CAF50;
-}
+.status-dot.online { background: #22C55E; }
+.status-dot.offline { background: #D1D5DB; box-shadow: none; }
 
-.status-dot.offline {
-  background-color: #ccc;
-}
-
-.content {
-  flex: 1;
-  padding: 0;
-}
+.content { flex: 1; padding: 0; }
 
 .empty-state {
   text-align: center;
-  padding: 80px 20px;
-  color: #999;
+  padding: 100px 20px;
+  color: #7C3AED;
+  opacity: 0.6;
 }
 
 .empty-icon {
-  font-size: 48px;
   margin-bottom: 16px;
 }
 
