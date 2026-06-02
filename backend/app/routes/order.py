@@ -132,6 +132,12 @@ def complete_order(order_id):
         return jsonify({'error': 'Only pending orders can be completed'}), 400
 
     order.status = 'completed'
+
+    # 将商品标记为已售出
+    product = order.product
+    if product:
+        product.status = 'sold'
+
     db.session.commit()
 
     # 通知卖家
