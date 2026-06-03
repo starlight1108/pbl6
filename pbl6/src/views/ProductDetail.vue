@@ -15,16 +15,6 @@ const isLoading = ref(true)
 const isSubmitting = ref(false)
 const showReportModal = ref(false)
 
-// 议价相关状态
-const showOfferModal = ref(false)
-const offerPrice = ref('')
-const isSubmittingOffer = ref(false)
-const currentOffer = ref(null)
-
-// 卖家视角的议价请求列表
-const sellerOffers = ref([])
-const isProcessingOffer = ref(false)
-
 // 卖家修改价格相关
 const editPrice = ref('')
 const isUpdatingPrice = ref(false)
@@ -41,10 +31,6 @@ const closePriceModal = () => {
 
 const fetchProduct = async () => {
   const productId = route.params.id
-  
-  // 重置议价状态
-  currentOffer.value = null
-  sellerOffers.value = []
   
   try {
     const response = await fetch(`http://127.0.0.1:5000/api/products/${productId}`)
@@ -74,111 +60,6 @@ const fetchComments = async () => {
     }
   } catch (error) {
     console.error('获取评论失败:', error)
-  }
-}
-
-const fetchCurrentOffer = async () => {
-  if (!userStore.token || !product.value) return
-  
-  const productId = route.params.id
-  try {
-    const response = await fetch(`http://127.0.0.1:5000/api/offers/buyer?product_id=${productId}`, {
-      headers: {
-        'Authorization': `Bearer ${userStore.token}`
-      }
-    })
-    const data = await response.json()
-    if (data.offers && data.offers.length > 0) {
-      currentOffer.value = data.offers[0]
-    }
-  } catch (error) {
-    console.error('获取议价信息失败:', error)
-  }
-}
-
-const fetchSellerOffers = async () => {
-  if (!userStore.token || !product.value || !isSeller()) return
-  
-  const productId = route.params.id
-  try {
-    const response = await fetch(`http://127.0.0.1:5000/api/offers/seller?product_id=${productId}`, {
-      headers: {
-        'Authorization': `Bearer ${userStore.token}`
-      }
-    })
-    const data = await response.json()
-    if (data.offers) {
-      sellerOffers.value = data.offers
-    }
-  } catch (error) {
-    console.error('获取议价请求失败:', error)
-  }
-}
-
-const acceptOffer = async (offerId) => {
-  if (!confirm('确定要同意这个议价请求吗？')) {
-    return
-  }
-  
-  isProcessingOffer.value = true
-  
-  try {
-    const response = await fetch(`http://127.0.0.1:5000/api/offers/${offerId}/accept`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${userStore.token}`
-      }
-    })
-    
-    const data = await response.json()
-    
-    if (response.ok) {
-      alert('议价已同意，页面将刷新以显示更新后的价格')
-      // 刷新页面以显示更新后的商品价格
-      window.location.reload()
-    } else {
-      alert(data.error || '同意议价失败')
-    }
-  } catch (error) {
-    console.error('同意议价失败:', error)
-    alert('同意议价失败')
-  } finally {
-    isProcessingOffer.value = false
-  }
-}
-
-const rejectOffer = async (offerId) => {
-  if (!confirm('确定要拒绝这个议价请求吗？')) {
-    return
-  }
-  
-  isProcessingOffer.value = true
-  
-  try {
-    const response = await fetch(`http://127.0.0.1:5000/api/offers/${offerId}/reject`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${userStore.token}`
-      }
-    })
-    
-    const data = await response.json()
-    
-    if (response.ok) {
-      alert('议价已拒绝')
-      // 更新议价状态
-      const offerIndex = sellerOffers.value.findIndex(o => o.id === offerId)
-      if (offerIndex !== -1) {
-        sellerOffers.value[offerIndex].status = 'rejected'
-      }
-    } else {
-      alert(data.error || '拒绝议价失败')
-    }
-  } catch (error) {
-    console.error('拒绝议价失败:', error)
-    alert('拒绝议价失败')
-  } finally {
-    isProcessingOffer.value = false
   }
 }
 
@@ -248,93 +129,6 @@ const deleteComment = async (commentId) => {
   }
 }
 
-
-const openOfferModal = () => {
-  if (!userStore.token) {
-    alert('请先登录')
-    router.push('/login')
-    return
-  }
-  
-  if (isSeller()) {
-    alert('不能对自己的商品议价')
-    return
-  }
-  
-  showOfferModal.value = true
-}
-
-const closeOfferModal = () => {
-  showOfferModal.value = false
-  offerPrice.value = ''
-}
-
-const submitOffer = async () => {
-  console.log('=== 提交议价 ===')
-  console.log('议价金额:', offerPrice.value)
-  console.log('商品ID:', route.params.id)
-  console.log('商品原价:', product.value?.price)
-  console.log('Token:', userStore.token ? '存在 (' + userStore.token.length + '字符)' : '无')
-
-  if (!offerPrice.value || isNaN(offerPrice.value) || parseFloat(offerPrice.value) <= 0) {
-    alert('请输入有效的议价金额')
-    return
-  }
-
-  const price = parseFloat(offerPrice.value)
-  if (price >= product.value.price) {
-    alert('议价金额必须低于商品原价')
-    return
-  }
-
-  if (!userStore.token) {
-    alert('请先登录')
-    router.push('/login')
-    return
-  }
-
-  isSubmittingOffer.value = true
-
-  try {
-    const response = await fetch('http://127.0.0.1:5000/api/offers', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${userStore.token}`
-      },
-      body: JSON.stringify({
-        seller_id: product.value.seller_id,
-        product_id: product.value.id,
-        offered_price: price
-      })
-    })
-
-    console.log('响应状态', response.status)
-
-    if (response.status === 401) {
-      alert('登录状态已过期，请重新登录')
-      userStore.logout()
-      router.push('/login')
-      return
-    }
-
-    const data = await response.json()
-    console.log('响应数据:', data)
-
-    if (response.ok) {
-      alert('议价请求已发送，等待卖家回复')
-      currentOffer.value = data.offer
-      closeOfferModal()
-    } else {
-      alert(data.error || '议价失败')
-    }
-  } catch (error) {
-    console.error('提交议价失败:', error)
-    alert('提交议价失败: ' + error.message)
-  } finally {
-    isSubmittingOffer.value = false
-  }
-}
 
 const updatePrice = async () => {
   if (!editPrice.value || isUpdatingPrice.value) return
@@ -406,27 +200,6 @@ const isSeller = () => {
   return userStore.userId && product.value && product.value.seller_id === userStore.userId
 }
 
-const getOfferStatusText = (status) => {
-  const statusMap = {
-    'pending': '待回复',
-    'accepted': '已同意',
-    'rejected': '已拒绝',
-    'canceled': '已取消'
-  }
-  return statusMap[status] || status
-}
-
-const getOfferStatusClass = (status) => {
-  const classMap = {
-    'pending': 'offer-status-pending',
-    'accepted': 'offer-status-accepted',
-    'rejected': 'offer-status-rejected',
-    'canceled': 'offer-status-canceled'
-  }
-  return classMap[status] || ''
-}
-
-
 const formatDate = (dateString) => {
   const date = new Date(dateString)
   return date.toLocaleString('zh-CN', {
@@ -439,10 +212,7 @@ const formatDate = (dateString) => {
 }
 
 onMounted(() => {
-  fetchProduct().then(() => {
-    fetchCurrentOffer()
-    fetchSellerOffers()
-  })
+  fetchProduct()
   fetchComments()
 })
 </script>
@@ -469,30 +239,12 @@ onMounted(() => {
           <div class="price-section">
             <p class="product-price">¥{{ product.price.toFixed(2) }}</p>
             <button 
-              v-if="!isSeller() && product.status === 'active'" 
-              @click="openOfferModal" 
-              class="offer-button"
-            >
-              议价
-            </button>
-            <button 
               v-if="isSeller()" 
               @click="openPriceModal" 
               class="offer-button edit-price-btn"
             >
               修改价格
             </button>
-          </div>
-          
-          <!-- 议价状态显示 -->
-          <div v-if="currentOffer" class="offer-status">
-            <span class="offer-label">议价状态：</span>
-            <span :class="['offer-status-badge', getOfferStatusClass(currentOffer.status)]">
-              {{ getOfferStatusText(currentOffer.status) }}
-            </span>
-            <span v-if="currentOffer.status !== 'canceled'" class="offer-price">
-              议价金额：¥{{ currentOffer.offered_price.toFixed(2) }}
-            </span>
           </div>
           
           <p class="product-category">分类：{{ product.category }}</p>
@@ -503,49 +255,6 @@ onMounted(() => {
           <p class="product-date">发布时间：{{ formatDate(product.created_at) }}</p>
           <p class="product-description">{{ product.description }}</p>
           
-
-          <!-- 卖家视角：议价请求列表 -->
-          <div v-if="isSeller()" class="seller-offers-section">
-            <h3>议价请求 ({{ sellerOffers.length }})</h3>
-            
-            <div v-if="sellerOffers.length === 0" class="no-offers">
-              <p>暂无议价请求</p>
-            </div>
-            
-            <div v-else class="offers-list">
-              <div v-for="offer in sellerOffers" :key="offer.id" class="offer-item">
-                <div class="offer-header">
-                  <span class="buyer-info">买家：{{ offer.buyer?.nickname || '匿名买家' }}</span>
-                  <span :class="['offer-status-badge', getOfferStatusClass(offer.status)]">
-                    {{ getOfferStatusText(offer.status) }}
-                  </span>
-                </div>
-                <div class="offer-content">
-                  <div class="price-info">
-                    <span class="original">原价：¥{{ offer.original_price?.toFixed(2) }}</span>
-                    <span class="offered">议价：¥{{ offer.offered_price?.toFixed(2) }}</span>
-                  </div>
-                  <p class="offer-time">{{ formatDate(offer.created_at) }}</p>
-                </div>
-                <div v-if="offer.status === 'pending'" class="offer-actions">
-                  <button 
-                    @click="acceptOffer(offer.id)" 
-                    :disabled="isProcessingOffer" 
-                    class="action-btn accept-btn"
-                  >
-                    同意
-                  </button>
-                  <button 
-                    @click="rejectOffer(offer.id)" 
-                    :disabled="isProcessingOffer" 
-                    class="action-btn reject-btn"
-                  >
-                    拒绝
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
 
           <div v-if="userStore.token && !isSeller()" class="product-actions">
             <button @click="contactSeller" class="contact-btn">联系卖家</button>
@@ -603,38 +312,6 @@ onMounted(() => {
             </div>
             <p class="comment-content">{{ comment.content }}</p>
           </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 议价弹窗 -->
-    <div v-if="showOfferModal" class="modal-overlay" @click.self="closeOfferModal">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h3>议价</h3>
-          <button @click="closeOfferModal" class="close-btn">×</button>
-        </div>
-        <div class="modal-body">
-          <p class="original-price">原价：¥{{ product?.price.toFixed(2) }}</p>
-          <div class="form-group">
-            <label for="offerPrice">您的议价金额</label>
-            <input 
-              type="number" 
-              id="offerPrice" 
-              v-model="offerPrice" 
-              placeholder="请输入议价金额"
-              step="0.01"
-              :max="product && product.price ? product.price - 0.01 : 999999"
-              min="0.01"
-              class="offer-input"
-            >
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button @click="closeOfferModal" class="cancel-btn">取消</button>
-          <button @click="submitOffer" :disabled="isSubmittingOffer" class="submit-offer-btn">
-            {{ isSubmittingOffer ? '提交中...' : '提交议价' }}
-          </button>
         </div>
       </div>
     </div>
@@ -818,40 +495,6 @@ onMounted(() => {
   box-shadow: 0 6px 20px rgba(245, 158, 11, 0.35);
 }
 
-.offer-status {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 12px 16px;
-  background: #FAF5FF;
-  border-radius: 12px;
-  margin-bottom: 15px;
-  border: 1px solid rgba(124, 58, 237, 0.1);
-}
-
-.offer-label {
-  font-size: 14px;
-  color: #6B7280;
-}
-
-.offer-status-badge {
-  padding: 4px 14px;
-  border-radius: 20px;
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.offer-status-pending { background: #FEF3C7; color: #D97706; }
-.offer-status-accepted { background: #DCFCE7; color: #22C55E; }
-.offer-status-rejected { background: #FEE2E2; color: #EF4444; }
-.offer-status-canceled { background: #F3F4F6; color: #9CA3AF; }
-
-.offer-price {
-  font-size: 14px;
-  color: #7C3AED;
-  font-weight: 600;
-}
-
 .product-category,
 .product-status,
 .product-seller,
@@ -873,123 +516,10 @@ onMounted(() => {
   border-top: 1px solid #EDE9FE;
 }
 
-/* 卖家议价请求区域 */
-.seller-offers-section {
-  margin-top: 20px;
-  padding-top: 20px;
-  border-top: 1px solid #EDE9FE;
-}
-
-.seller-offers-section h3 {
-  color: #4C1D95;
-  font-size: 18px;
-  font-weight: 600;
-  margin-bottom: 15px;
-}
-
 .product-actions {
   margin-top: 20px;
   padding-top: 20px;
   border-top: 1px solid #EDE9FE;
-}
-
-.no-offers {
-  text-align: center;
-  padding: 24px;
-  color: #7C3AED;
-  opacity: 0.6;
-  background: #FAF5FF;
-  border-radius: 12px;
-  border: 2px dashed #EDE9FE;
-}
-
-.offers-list { display: flex; flex-direction: column; gap: 12px; }
-
-.offer-item {
-  background: #FAF5FF;
-  border-radius: 14px;
-  padding: 16px;
-  border: 1px solid rgba(124, 58, 237, 0.08);
-}
-
-.offer-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 10px;
-}
-
-.buyer-info {
-  font-size: 14px;
-  font-weight: 600;
-  color: #4C1D95;
-}
-
-.price-info {
-  display: flex;
-  gap: 15px;
-  margin-bottom: 8px;
-}
-
-.price-info .original {
-  font-size: 14px;
-  color: #9CA3AF;
-  text-decoration: line-through;
-}
-
-.price-info .offered {
-  font-size: 16px;
-  color: #7C3AED;
-  font-weight: 700;
-}
-
-.offer-time { font-size: 12px; color: #A78BFA; margin: 0; }
-
-.offer-actions {
-  display: flex;
-  gap: 10px;
-  margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px dashed rgba(124, 58, 237, 0.15);
-}
-
-.offer-actions .action-btn {
-  flex: 1;
-  padding: 10px;
-  border: none;
-  border-radius: 10px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.accept-btn {
-  background: linear-gradient(135deg, #22C55E, #16A34A);
-  color: white;
-  box-shadow: 0 4px 14px rgba(34, 197, 94, 0.25);
-}
-
-.accept-btn:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(34, 197, 94, 0.35);
-}
-
-.reject-btn {
-  background: linear-gradient(135deg, #EF4444, #DC2626);
-  color: white;
-  box-shadow: 0 4px 14px rgba(239, 68, 68, 0.25);
-}
-
-.reject-btn:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(239, 68, 68, 0.35);
-}
-
-.action-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  transform: none !important;
 }
 
 .contact-btn {
