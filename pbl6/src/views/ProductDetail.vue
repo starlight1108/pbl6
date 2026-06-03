@@ -2,6 +2,7 @@
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '../stores/user.js'
+import ReportModal from '../components/ReportModal.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -12,6 +13,7 @@ const comments = ref([])
 const newComment = ref('')
 const isLoading = ref(true)
 const isSubmitting = ref(false)
+const showReportModal = ref(false)
 
 // 议价相关状态
 const showOfferModal = ref(false)
@@ -22,20 +24,6 @@ const currentOffer = ref(null)
 // 卖家视角的议价请求列表
 const sellerOffers = ref([])
 const isProcessingOffer = ref(false)
-
-// 卖家修改价格相关
-const editPrice = ref('')
-const isUpdatingPrice = ref(false)
-const showPriceModal = ref(false)
-
-const openPriceModal = () => {
-  showPriceModal.value = true
-}
-
-const closePriceModal = () => {
-  showPriceModal.value = false
-  editPrice.value = ''
-}
 
 const fetchProduct = async () => {
   const productId = route.params.id
@@ -334,44 +322,6 @@ const submitOffer = async () => {
   }
 }
 
-const updatePrice = async () => {
-  if (!editPrice.value || isUpdatingPrice.value) return
-  
-  const newPrice = parseFloat(editPrice.value)
-  if (isNaN(newPrice) || newPrice <= 0) {
-    alert('请输入有效的价格')
-    return
-  }
-  
-  isUpdatingPrice.value = true
-  
-  try {
-    const response = await fetch(`http://127.0.0.1:5000/api/products/${route.params.id}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${userStore.token}`
-      },
-      body: JSON.stringify({ price: newPrice })
-    })
-    
-    const data = await response.json()
-    
-    if (response.ok) {
-      product.value.price = newPrice
-      closePriceModal()
-      alert('价格修改成功！')
-    } else {
-      alert(data.error || '修改价格失败')
-    }
-  } catch (error) {
-    console.error('修改价格失败:', error)
-    alert('修改价格失败')
-  } finally {
-    isUpdatingPrice.value = false
-  }
-}
-
 const contactSeller = async () => {
   if (!product.value || !userStore.token) return
 
@@ -472,13 +422,6 @@ onMounted(() => {
             >
               议价
             </button>
-            <button 
-              v-if="isSeller()" 
-              @click="openPriceModal" 
-              class="offer-button edit-price-btn"
-            >
-              修改价格
-            </button>
           </div>
           
           <!-- 议价状态显示 -->
@@ -544,11 +487,20 @@ onMounted(() => {
             </div>
           </div>
 
-          <div v-if="userStore.token && !isSeller()" class="product-actions">
+          <div v-if="userStore.token && userStore.id !== product.seller_id" class="product-actions">
             <button @click="contactSeller" class="contact-btn">联系卖家</button>
+            <button @click="showReportModal = true" class="report-btn">举报商品</button>
           </div>
         </div>
       </div>
+
+      <ReportModal 
+        v-if="showReportModal"
+        :productId="product.id"
+        :productTitle="product.title"
+        @close="showReportModal = false"
+        @success="showReportModal = false"
+      />
 
       <div class="comments-section">
         <h3>商品评论 ({{ comments.length }})</h3>
@@ -622,37 +574,6 @@ onMounted(() => {
           <button @click="closeOfferModal" class="cancel-btn">取消</button>
           <button @click="submitOffer" :disabled="isSubmittingOffer" class="submit-offer-btn">
             {{ isSubmittingOffer ? '提交中...' : '提交议价' }}
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- 修改价格弹窗 -->
-    <div v-if="showPriceModal" class="modal-overlay" @click.self="closePriceModal">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h3>修改价格</h3>
-          <button @click="closePriceModal" class="close-btn">×</button>
-        </div>
-        <div class="modal-body">
-          <p class="original-price">当前价格：¥{{ product?.price.toFixed(2) }}</p>
-          <div class="form-group">
-            <label for="editPrice">新价格</label>
-            <input 
-              type="number" 
-              id="editPrice" 
-              v-model="editPrice" 
-              placeholder="请输入新价格"
-              step="0.01"
-              min="0.01"
-              class="offer-input"
-            >
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button @click="closePriceModal" class="cancel-btn">取消</button>
-          <button @click="updatePrice" :disabled="!editPrice || isUpdatingPrice" class="submit-offer-btn">
-            {{ isUpdatingPrice ? '修改中...' : '确认修改' }}
           </button>
         </div>
       </div>
@@ -991,6 +912,7 @@ onMounted(() => {
   cursor: pointer;
   transition: all 0.25s ease;
   box-shadow: 0 4px 14px rgba(34, 197, 94, 0.25);
+  margin-right: 10px;
 }
 
 .contact-btn:hover {
@@ -998,7 +920,24 @@ onMounted(() => {
   box-shadow: 0 8px 25px rgba(34, 197, 94, 0.35);
 }
 
-/* 评论区 */
+.report-btn {
+  padding: 12px 32px;
+  background: linear-gradient(135deg, #EF4444, #DC2626);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  font-weight: 600;
+  box-shadow: 0 4px 14px rgba(239, 68, 68, 0.25);
+}
+
+.report-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 25px rgba(239, 68, 68, 0.35);
+}
+
 .comments-section {
   background: white;
   border-radius: 20px;

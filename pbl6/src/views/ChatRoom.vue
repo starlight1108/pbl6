@@ -3,17 +3,24 @@ import { ref, onMounted, onUnmounted, nextTick, watch, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useChatStore } from '../stores/chat.js'
 import { useUserStore } from '../stores/user.js'
+import { useOrderStore } from '../stores/order.js'
 
 const route = useRoute()
 const router = useRouter()
 const chatStore = useChatStore()
 const userStore = useUserStore()
+const orderStore = useOrderStore()
 
 const messageInput = ref(null)
 const conversationId = parseInt(route.params.id)
 const newMessage = ref('')
 const messagesContainer = ref(null)
 const typingTimeout = ref(null)
+
+// 交易弹窗状态
+const showTradeModal = ref(false)
+const tradePrice = ref('')
+const isSubmittingTrade = ref(false)
 
 const conversation = computed(() => {
   return chatStore.conversations.find(c => c.id === conversationId)
@@ -106,6 +113,85 @@ const goBack = () => {
   router.push('/chat')
 }
 
+// 交易弹窗
+const openTradeModal = () => {
+  if (!conversation.value?.product_id) {
+    alert('该会话没有关联的商品，无法发起交易')
+    return
+  }
+  // 从 product_id 获取价格（如果没有价格信息，留空让用户输入）
+  tradePrice.value = ''
+  showTradeModal.value = true
+}
+
+const closeTradeModal = () => {
+  showTradeModal.value = false
+  tradePrice.value = ''
+}
+
+const submitTrade = async () => {
+  if (!tradePrice.value || isNaN(tradePrice.value) || parseFloat(tradePrice.value) <= 0) {
+    alert('请输入有效的交易金额')
+    return
+  }
+
+  if (!conversation.value?.product_id) {
+    alert('未关联商品，无法创建订单')
+    return
+  }
+
+  isSubmittingTrade.value = true
+  try {
+    const finalPrice = parseFloat(tradePrice.value)
+    const order = await orderStore.createOrder(
+      conversation.value.product_id,
+      finalPrice
+    )
+
+    closeTradeModal()
+
+    // 发送系统消息到聊天室
+    const systemMsg = `📋 交易已创建！订单 #${order.id}，金额 ¥${finalPrice.toFixed(2)}`
+    await sendSystemMessage(systemMsg)
+
+    // 弹出成功提示并提供跳转
+    if (confirm(`交易创建成功！订单 #${order.id}\n金额 ¥${finalPrice.toFixed(2)}\n\n点击确定查看订单详情`)) {
+      router.push(`/my-orders/${order.id}`)
+    }
+  } catch (error) {
+    alert(error.message || '创建订单失败')
+  } finally {
+    isSubmittingTrade.value = false
+  }
+}
+
+const sendSystemMessage = async (content) => {
+  try {
+    const response = await fetch(`http://127.0.0.1:5000/api/conversations/${conversationId}/messages`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${userStore.token}`
+      },
+      body: JSON.stringify({ content })
+    })
+
+    if (response.ok) {
+      const msgData = await response.json()
+      if (chatStore.socket && chatStore.isConnected) {
+        chatStore.socket.emit('broadcast_message', {
+          conversation_id: conversationId,
+          message: msgData.chat_message
+        })
+      }
+      await chatStore.loadMessages(conversationId, 1)
+      await scrollToBottom()
+    }
+  } catch (error) {
+    console.error('发送系统消息失败:', error)
+  }
+}
+
 const handleKeydown = (e) => {
   if (e.key === 'Enter' && !e.shiftKey) {
     e.preventDefault()
@@ -152,6 +238,13 @@ watch(() => chatStore.currentMessages.length, () => {
       <div v-if="conversation?.product_title" class="product-info">
         关于：{{ conversation.product_title }}
       </div>
+      <button
+        v-if="conversation?.product_id"
+        @click="openTradeModal"
+        class="trade-button"
+      >
+        发起交易
+      </button>
     </div>
 
     <div class="messages" ref="messagesContainer">
@@ -184,6 +277,44 @@ watch(() => chatStore.currentMessages.length, () => {
       <button @click="sendMessage" :disabled="!newMessage.trim()" class="send-button">
         发送
       </button>
+    </div>
+  </div>
+
+  <!-- 交易弹窗 -->
+  <div v-if="showTradeModal" class="modal-overlay" @click.self="closeTradeModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>发起交易</h3>
+        <button @click="closeTradeModal" class="close-btn">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-product-info">
+          <div class="modal-product-icon">📦</div>
+          <div class="modal-product-detail">
+            <p class="modal-product-title">{{ conversation?.product_title || '未知商品' }}</p>
+            <p class="modal-product-label">与 {{ otherUser?.nickname || '对方' }} 的交易</p>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="tradePrice">交易金额（¥）</label>
+          <input
+            type="number"
+            id="tradePrice"
+            v-model="tradePrice"
+            placeholder="请输入双方商定的金额"
+            step="0.01"
+            min="0.01"
+            class="trade-input"
+          >
+        </div>
+        <p class="form-tip">创建订单后，对方将收到通知。交易完成后可确认收货。</p>
+      </div>
+      <div class="modal-footer">
+        <button @click="closeTradeModal" class="cancel-btn">取消</button>
+        <button @click="submitTrade" :disabled="isSubmittingTrade" class="submit-trade-btn">
+          {{ isSubmittingTrade ? '创建中...' : '创建订单' }}
+        </button>
+      </div>
     </div>
   </div>
 </template>
@@ -387,5 +518,205 @@ watch(() => chatStore.currentMessages.length, () => {
   cursor: not-allowed;
   transform: none !important;
   box-shadow: none;
+}
+
+/* 发起交易按钮 */
+.trade-button {
+  padding: 8px 18px;
+  background: linear-gradient(135deg, #22C55E, #16A34A);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  flex-shrink: 0;
+  box-shadow: 0 4px 14px rgba(34, 197, 94, 0.25);
+  white-space: nowrap;
+}
+
+.trade-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(34, 197, 94, 0.35);
+}
+
+/* 弹窗覆盖层 */
+.modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.modal-content {
+  background: white;
+  border-radius: 20px;
+  width: 90%;
+  max-width: 420px;
+  box-shadow: 0 20px 60px rgba(124, 58, 237, 0.15);
+  animation: slideUp 0.25s ease;
+  border: 1px solid rgba(124, 58, 237, 0.08);
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 18px 24px;
+  border-bottom: 1px solid #EDE9FE;
+}
+
+.modal-header h3 {
+  margin: 0;
+  color: #4C1D95;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.close-btn {
+  background: #F3F4F6;
+  border: none;
+  font-size: 20px;
+  color: #6B7280;
+  cursor: pointer;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.close-btn:hover { background: #E5E7EB; color: #1F2937; }
+
+.modal-body { padding: 24px; }
+
+.modal-product-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  background: #FAF5FF;
+  border-radius: 12px;
+  margin-bottom: 20px;
+  border: 1px solid rgba(124, 58, 237, 0.08);
+}
+
+.modal-product-icon {
+  font-size: 28px;
+}
+
+.modal-product-detail { flex: 1; }
+
+.modal-product-title {
+  color: #4C1D95;
+  font-weight: 600;
+  font-size: 15px;
+  margin: 0 0 2px 0;
+}
+
+.modal-product-label {
+  color: #8B5CF6;
+  font-size: 12px;
+  margin: 0;
+}
+
+.form-group { margin-bottom: 14px; }
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  color: #4C1D95;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.trade-input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid #EDE9FE;
+  border-radius: 12px;
+  font-size: 18px;
+  font-weight: 700;
+  color: #7C3AED;
+  background: #FAF5FF;
+  outline: none;
+  transition: all 0.25s ease;
+  box-sizing: border-box;
+}
+
+.trade-input:focus {
+  border-color: #7C3AED;
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.15);
+  background: white;
+}
+
+.form-tip {
+  font-size: 12px;
+  color: #9CA3AF;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.modal-footer {
+  display: flex;
+  gap: 12px;
+  padding: 16px 24px;
+  border-top: 1px solid #EDE9FE;
+}
+
+.cancel-btn,
+.submit-trade-btn {
+  flex: 1;
+  padding: 12px;
+  border: none;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.cancel-btn {
+  background: #F3F4F6;
+  color: #6B7280;
+}
+
+.cancel-btn:hover {
+  background: #E5E7EB;
+}
+
+.submit-trade-btn {
+  background: linear-gradient(135deg, #22C55E, #16A34A);
+  color: white;
+  box-shadow: 0 4px 14px rgba(34, 197, 94, 0.25);
+}
+
+.submit-trade-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(34, 197, 94, 0.35);
+}
+
+.submit-trade-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
 }
 </style>

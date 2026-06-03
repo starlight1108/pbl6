@@ -17,7 +17,9 @@
     "test:e2e:setup": "node tests/ai-automation/setup.js",
     "test:e2e:auth": "npx playwright test --config=tests/playwright.config.js tests/ai-automation/auth.flow.spec.js",
     "test:e2e:product": "npx playwright test --config=tests/playwright.config.js tests/ai-automation/product.flow.spec.js",
-    "test:e2e:chat": "npx playwright test --config=tests/playwright.config.js tests/ai-automation/chat.flow.spec.js"
+    "test:e2e:chat": "npx playwright test --config=tests/playwright.config.js tests/ai-automation/chat.flow.spec.js",
+    "test:e2e:order": "npx playwright test --config=tests/playwright.config.js tests/ai-automation/order.flow.spec.js",
+    "test:e2e:sold": "npx playwright test --config=tests/playwright.config.js tests/ai-automation/sold-product.flow.spec.js"
   },
   "dependencies": {
     "pinia": "^3.0.3",
