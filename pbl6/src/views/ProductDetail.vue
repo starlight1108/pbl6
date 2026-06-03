@@ -385,6 +385,7 @@ const contactSeller = async () => {
         'Authorization': `Bearer ${userStore.token}`
       },
       body: JSON.stringify({
+        seller_id: product.value.seller_id,
         product_id: route.params.id
       })
     })
