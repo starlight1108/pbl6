@@ -59,6 +59,11 @@ const router = createRouter({
       component: () => import('../views/Notifications.vue')
     },
     {
+      path: '/reports',
+      name: 'reports',
+      component: () => import('../views/Reports.vue')
+    },
+    {
       path: '/chat',
       name: 'chat',
       component: () => import('../views/ChatConversations.vue')
@@ -67,6 +72,16 @@ const router = createRouter({
       path: '/chat/:id',
       name: 'chat-room',
       component: () => import('../views/ChatRoom.vue')
+    },
+    {
+      path: '/my-orders',
+      name: 'my-orders',
+      component: () => import('../views/MyOrders.vue')
+    },
+    {
+      path: '/my-orders/:id',
+      name: 'order-detail',
+      component: () => import('../views/OrderDetail.vue')
     }
   ],
 })

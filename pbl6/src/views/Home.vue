@@ -73,6 +73,11 @@ const handleMyProducts = () => {
   isDropdownOpen.value = false
 }
 
+const handleMyOrders = () => {
+  router.push('/my-orders')
+  isDropdownOpen.value = false
+}
+
 const handleChat = () => {
   router.push('/chat')
   isDropdownOpen.value = false
@@ -313,9 +318,21 @@ onMounted(async () => {
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                 个人信息
               </button>
+              <button @click="router.push('/notifications')" class="dropdown-item notification-item">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                消息通知
+              </button>
+              <button @click="router.push('/reports')" class="dropdown-item report-item">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                我的举报
+              </button>
               <button @click="handleMyProducts" class="dropdown-item my-products-item">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/></svg>
                 我发布的
+              </button>
+              <button @click="handleMyOrders" class="dropdown-item my-orders-item">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 14l2 2 4-4"/></svg>
+                我的订单
               </button>
               <button @click="handleChat" class="dropdown-item chat-item">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
@@ -602,10 +619,11 @@ onMounted(async () => {
 }
 
 .profile-item { color: #7C3AED; }
-.my-products-item,
+.my-products-item { color: #7C3AED; }
 .chat-item { color: #7C3AED; }
 .publish-item { color: #22C55E; }
 .notification-item { color: #7C3AED; }
+.report-item { color: #EF4444; }
 .logout-item { color: #EF4444; }
 
 /* ===== 内容区 ===== */

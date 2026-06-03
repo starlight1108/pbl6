@@ -60,7 +60,9 @@ const handleNotificationClick = async (notification) => {
     await notificationStore.markAsRead(notification.id)
   }
   
-  if (notification.related_type === 'product' && notification.related_id) {
+  if (notification.related_type === 'order' && notification.related_id) {
+    router.push(`/my-orders/${notification.related_id}`)
+  } else if (notification.related_type === 'product' && notification.related_id) {
     router.push(`/products/${notification.related_id}`)
   }
 }
