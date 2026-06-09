@@ -19,12 +19,12 @@ export function timestamp() {
 /**
  * 生成测试用户数据
  */
-export function generateTestUser() {
+export function generateTestUser(nickname) {
   const ts = timestamp();
   return {
     email: `test_${ts}@example.com`,
     password: 'TestPass123',
-    nickname: `测试用户_${ts}`,
+    nickname: nickname || `测试用户_${ts}`,
   };
 }
 
@@ -34,8 +34,8 @@ export function generateTestUser() {
 export function generateTestProduct() {
   const ts = timestamp();
   return {
-    title: `测试二手教材_${ts}`,
-    description: '这是一本九成新的教材，适合计算机专业学生使用，没有任何涂写痕迹。',
+    title: `测试商品_${ts}`,
+    description: '这是一件测试商品，用于自动化测试验证。',
     price: '25.00',
     category: '书籍教材',
   };
@@ -50,6 +50,14 @@ export function generateTestMessage() {
   };
 }
 
+/**
+ * 生成超长文本
+ */
+export function generateLongText(length) {
+  const base = '长文本测试内容。';
+  return base.repeat(Math.ceil(length / base.length)).substring(0, length);
+}
+
 // ============================================================
 // 页面操作封装
 // ============================================================
@@ -60,12 +68,11 @@ export function generateTestMessage() {
 export async function waitForPageReady(page) {
   await page.waitForLoadState('networkidle');
   // 额外等待确保 Vue 渲染完成
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(800);
 }
 
 /**
  * 通过 API 直接创建测试用户（绕过 UI，用于准备测试数据）
- * 返回用户数据，或在已存在时返回 null
  */
 export async function createTestUserViaAPI(userData) {
   const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
@@ -74,7 +81,7 @@ export async function createTestUserViaAPI(userData) {
     body: JSON.stringify(userData),
   });
   const data = await response.json();
-  if (!response.ok && data.error !== '邮箱已被注册') {
+  if (!response.ok && data.error !== 'Email already registered') {
     throw new Error(`创建用户失败: ${data.error}`);
   }
   return response.ok ? data : null;
@@ -97,6 +104,19 @@ export async function loginViaAPI(email, password) {
 }
 
 /**
+ * 通过 UI 执行完整登录流程
+ */
+export async function loginViaUI(page, email, password) {
+  await page.goto('/login');
+  await waitForPageReady(page);
+  await page.fill('#email', email);
+  await page.fill('#password', password);
+  await page.click('button.login-button');
+  await page.waitForURL('**/');
+  await waitForPageReady(page);
+}
+
+/**
  * 检查元素是否存在（不抛出错误）
  */
 export async function elementExists(page, selector) {
@@ -106,6 +126,28 @@ export async function elementExists(page, selector) {
   } catch {
     return false;
   }
+}
+
+/**
+ * 重置到登录页（清除 localStorage）
+ */
+export async function resetToLoginPage(page) {
+  await page.goto('/login');
+  await page.evaluate(() => localStorage.clear());
+  await waitForPageReady(page);
+}
+
+/**
+ * 设置对话框自动处理
+ */
+export function setupDialogHandler(page, accept = true) {
+  const dialogs = [];
+  page.on('dialog', async (dialog) => {
+    dialogs.push({ type: dialog.type(), message: dialog.message() });
+    if (accept) await dialog.accept();
+    else await dialog.dismiss();
+  });
+  return dialogs;
 }
 
 // ============================================================
