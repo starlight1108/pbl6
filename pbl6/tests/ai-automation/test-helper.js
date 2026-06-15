@@ -129,11 +129,22 @@ export async function elementExists(page, selector) {
 }
 
 /**
- * 重置到登录页（清除 localStorage）
+ * 重置到登录页（清除 localStorage 和 cookies）
  */
 export async function resetToLoginPage(page) {
   await page.goto('/login');
-  await page.evaluate(() => localStorage.clear());
+  // 使用 try-catch 处理 localStorage 访问限制
+  try {
+    await page.evaluate(() => {
+      localStorage.clear();
+      sessionStorage.clear();
+    });
+  } catch (e) {
+    console.log('⚠️ localStorage 访问受限，尝试通过 context 清除');
+    // 通过 context 清除 cookies
+    await page.context().clearCookies();
+    await page.context().clearPermissions();
+  }
   await waitForPageReady(page);
 }
 

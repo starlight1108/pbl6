@@ -404,7 +404,12 @@ test.describe('🏠 首页与权限 - 补充验证', () => {
   // TC-HP-001：首页加载
   test('TC-HP-001 首页展示 - 各模块正常加载', async ({ page }) => {
     await test.step('未登录访问首页', async () => {
-      await page.evaluate(() => localStorage.clear());
+      // 使用安全方式清除状态
+      try {
+        await page.evaluate(() => localStorage.clear());
+      } catch (e) {
+        await page.context().clearCookies();
+      }
       await page.goto('/');
       await waitForPageReady(page);
       // 由于全局守卫，未登录会跳转登录页
