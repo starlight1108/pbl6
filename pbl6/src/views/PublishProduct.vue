@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useProductStore } from '../stores/product.js'
 import { useUserStore } from '../stores/user.js'
@@ -20,6 +20,7 @@ const imagePreview = ref(null)
 const categories = ['书籍教材', '电子数码', '生活用品', '交通工具', '体育用品', '服饰鞋包', '美妆护肤', '其他']
 const errorMessage = ref('')
 const isLoading = ref(false)
+const redirectTimer = ref(null)
 
 const handleFileChange = (event) => {
   const file = event.target.files[0]
@@ -80,7 +81,7 @@ const handleSubmit = async () => {
     
     if (error.message.includes('401') || error.message.includes('未授权')) {
       errorMessage.value = '登录状态失效，请重新登录'
-      setTimeout(() => {
+      redirectTimer.value = setTimeout(() => {
         userStore.logout()
         router.push('/login')
       }, 2000)
@@ -103,6 +104,12 @@ onMounted(() => {
   if (!userStore.isLoggedIn) {
     console.log('用户未登录，跳转登录页')
     router.push('/login')
+  }
+})
+
+onUnmounted(() => {
+  if (redirectTimer.value) {
+    clearTimeout(redirectTimer.value)
   }
 })
 </script>
