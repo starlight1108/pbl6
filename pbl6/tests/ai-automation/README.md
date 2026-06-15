@@ -1,6 +1,6 @@
 # AI 自动化测试 - 校园二手交易平台
 
-基于 Playwright 的 AI 驱动端到端自动化测试套件。
+基于 Playwright 的端到端自动化测试套件。
 
 ## 📋 前置条件
 
@@ -47,11 +47,10 @@ npm run test:e2e:chat
 
 | 测试文件 | 流程 | 覆盖场景 |
 |---------|------|---------|
-| `auth.flow.spec.js` | 🔐 认证流程 | 注册、登录、退出、表单验证、会话持久化、未登录重定向 |
-| `product.flow.spec.js` | 📦 商品流程 | 发布商品、搜索、分类筛选、排序、详情查看、收藏、管理 |
-| `chat.flow.spec.js` | 💬 聊天流程 | 聊天列表、联系卖家、发送消息、会话管理 |
-| `order.flow.spec.js` | 📋 交易流程 | 发布商品、联系卖家、发起交易、订单列表、订单详情、取消订单 |
-| `sold-product.flow.spec.js` | 🔍 已售商品过滤 | 商品交易前可见 → 交易完成后自动从首页消失 |
+| `01-auth.flow.spec.js` | 🔐 用户管理 | 注册(7)、登录(6)、个人信息(6) — 共19个测试用例 |
+| `02-product.flow.spec.js` | 📦 商品管理 | 发布(7)、浏览/搜索(5)、详情(2)、管理(5)、评论(6)、收藏(5)、议价(8) — 共38个测试用例 |
+| `03-communication.flow.spec.js` | 💬 交易沟通 | 站内消息REST(8)、WebSocket(5)、通知(6+1UI)、举报(7) — 共27个测试用例 |
+| `04-order.flow.spec.js` | 📋 交易管理 | 订单(10)、已售商品(2+1UI)、安全补充(4) — 共17个测试用例 |
 
 ## 🛠️ 调试模式
 
@@ -70,16 +69,17 @@ npm run test:e2e:report
 
 ```
 tests/
-├── playwright.config.js       # Playwright 配置文件
+├── playwright.config.js         # Playwright 配置文件
 ├── ai-automation/
-│   ├── README.md              # 本文件
-│   ├── test-helper.js         # 测试辅助工具（生成数据、API操作）
-│   ├── setup.js               # 测试环境初始化脚本
-│   ├── auth.flow.spec.js      # 认证流程测试
-│   ├── product.flow.spec.js   # 商品流程测试
-│   └── chat.flow.spec.js      # 聊天流程测试
-├── test-results/              # 测试结果（自动生成）
-└── playwright-report/         # 测试报告（自动生成）
+│   ├── README.md                # 本文件
+│   ├── test-helper.js           # 测试辅助工具（生成数据、API操作）
+│   ├── setup.js                 # 测试环境初始化脚本
+│   ├── 01-auth.flow.spec.js     # 🔐 用户管理模块（注册/登录/个人信息）
+│   ├── 02-product.flow.spec.js  # 📦 商品管理模块（发布/浏览/评论/收藏/议价）
+│   ├── 03-communication.flow.spec.js  # 💬 交易沟通模块（消息/WebSocket/通知/举报）
+│   └── 04-order.flow.spec.js    # 📋 交易管理模块（订单/已售商品/安全验证）
+├── test-results/               # 测试结果（自动生成）
+└── playwright-report/          # 测试报告（自动生成）
 ```
 
 ## 🔄 CI/CD 集成
