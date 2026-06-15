@@ -73,14 +73,17 @@ const formatTime = (dateString) => {
 }
 
 const startPolling = () => {
-  if (userStore.isLoggedIn) {
+  if (!userStore.isLoggedIn) return
+  notificationStore.fetchUnreadCount()
+  chatStore.loadConversations()
+  pollingInterval = setInterval(() => {
+    if (!userStore.isLoggedIn) {
+      stopPolling()
+      return
+    }
     notificationStore.fetchUnreadCount()
     chatStore.loadConversations()
-    pollingInterval = setInterval(() => {
-      notificationStore.fetchUnreadCount()
-      chatStore.loadConversations()
-    }, 30000)
-  }
+  }, 30000)
 }
 
 const stopPolling = () => {
