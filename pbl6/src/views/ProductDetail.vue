@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '../stores/user.js'
 import ReportModal from '../components/ReportModal.vue'
@@ -19,6 +19,15 @@ const showReportModal = ref(false)
 const editPrice = ref('')
 const isUpdatingPrice = ref(false)
 const showPriceModal = ref(false)
+
+// 管理员处理举报相关
+const reports = ref([])
+const showReportPanel = ref(false)
+const selectedReportId = ref(null)
+const handleResult = ref('')
+const isHandling = ref(false)
+
+const isFromReport = computed(() => route.query.fromReport === 'true')
 
 const openPriceModal = () => {
   showPriceModal.value = true
@@ -168,6 +177,133 @@ const updatePrice = async () => {
   }
 }
 
+const fetchReports = async () => {
+  if (!userStore.isAdmin) return
+  
+  const productId = route.params.id
+  try {
+    const response = await fetch(`http://127.0.0.1:5000/api/admin/reports?product_id=${productId}`, {
+      headers: {
+        'Authorization': `Bearer ${userStore.token}`
+      }
+    })
+    const data = await response.json()
+    if (data.reports) {
+      reports.value = data.reports
+    }
+  } catch (error) {
+    console.error('获取举报信息失败:', error)
+  }
+}
+
+const selectReport = (reportId) => {
+  selectedReportId.value = reportId
+  handleResult.value = ''
+}
+
+const handleReport = async (action) => {
+  if (!selectedReportId.value || !handleResult.value.trim()) {
+    alert('请选择举报并填写处理结果')
+    return
+  }
+  
+  isHandling.value = true
+  
+  try {
+    const response = await fetch(`http://127.0.0.1:5000/api/admin/reports/${selectedReportId.value}/handle`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${userStore.token}`
+      },
+      body: JSON.stringify({
+        status: action,
+        result: handleResult.value.trim()
+      })
+    })
+    
+    const data = await response.json()
+    
+    if (response.ok) {
+      reports.value = reports.value.filter(r => r.id !== selectedReportId.value)
+      selectedReportId.value = null
+      handleResult.value = ''
+      alert('处理成功')
+      
+      if (action === 'approved') {
+        product.value.status = 'removed'
+      }
+    } else {
+      alert(data.error || '处理失败')
+    }
+  } catch (error) {
+    console.error('处理举报失败:', error)
+    alert('处理举报失败')
+  } finally {
+    isHandling.value = false
+  }
+}
+
+const goBackToReports = () => {
+  router.push('/reports')
+}
+
+const handleStatusChange = async (status) => {
+  if (!confirm(status === 'inactive' ? '确定要下架该商品吗？' : '确定要上架该商品吗？')) {
+    return
+  }
+  
+  try {
+    const response = await fetch(`http://127.0.0.1:5000/api/admin/products/${route.params.id}/status`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${userStore.token}`
+      },
+      body: JSON.stringify({ status })
+    })
+    
+    const data = await response.json()
+    
+    if (response.ok) {
+      product.value.status = status
+      alert(status === 'inactive' ? '商品已下架' : '商品已上架')
+    } else {
+      alert(data.error || '操作失败')
+    }
+  } catch (error) {
+    console.error('操作失败:', error)
+    alert('操作失败')
+  }
+}
+
+const handleDeleteProduct = async () => {
+  if (!confirm('确定要删除该商品吗？此操作不可恢复。')) {
+    return
+  }
+  
+  try {
+    const response = await fetch(`http://127.0.0.1:5000/api/admin/products/${route.params.id}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${userStore.token}`
+      }
+    })
+    
+    const data = await response.json()
+    
+    if (response.ok) {
+      alert('商品已删除')
+      router.push('/admin/products')
+    } else {
+      alert(data.error || '删除失败')
+    }
+  } catch (error) {
+    console.error('删除失败:', error)
+    alert('删除失败')
+  }
+}
+
 const contactSeller = async () => {
   if (!product.value || !userStore.token) return
 
@@ -211,9 +347,17 @@ const formatDate = (dateString) => {
   })
 }
 
-onMounted(() => {
-  fetchProduct()
-  fetchComments()
+onMounted(async () => {
+  await fetchProduct()
+  await fetchComments()
+  
+  if (userStore.isAdmin) {
+    await fetchReports()
+    if (isFromReport.value && reports.value.length > 0) {
+      showReportPanel.value = true
+      selectedReportId.value = reports.value[0].id
+    }
+  }
 })
 </script>
 
@@ -259,6 +403,63 @@ onMounted(() => {
           <div v-if="userStore.token && !isSeller()" class="product-actions">
             <button @click="contactSeller" class="contact-btn">联系卖家</button>
             <button @click="showReportModal = true" class="report-btn">举报商品</button>
+          </div>
+          
+          <div v-if="userStore.isAdmin" class="admin-actions">
+            <button @click="showReportPanel = !showReportPanel" class="admin-btn">
+              {{ showReportPanel ? '隐藏举报处理' : '处理举报 (' + reports.length + ')' }}
+            </button>
+            <button v-if="product.status === 'active'" @click="handleStatusChange('inactive')" class="admin-btn warning">
+              下架商品
+            </button>
+            <button @click="handleDeleteProduct" class="admin-btn danger">
+              删除商品
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 管理员举报处理面板 -->
+      <div v-if="userStore.isAdmin && showReportPanel" class="admin-report-panel">
+        <div class="panel-header">
+          <h3>举报处理</h3>
+          <button @click="goBackToReports" class="back-btn">返回举报列表</button>
+        </div>
+        
+        <div v-if="reports.length === 0" class="empty-reports">
+          <p>该商品暂无举报记录</p>
+        </div>
+        
+        <div v-else class="reports-list">
+          <div 
+            v-for="report in reports" 
+            :key="report.id"
+            :class="['report-item', { selected: selectedReportId === report.id }]"
+            @click="selectReport(report.id)"
+          >
+            <div class="report-header">
+              <span class="report-reason">{{ report.reason }}</span>
+              <span :class="['report-status', report.status]">{{ report.status === 'pending' ? '待处理' : report.status === 'approved' ? '已通过' : '已驳回' }}</span>
+            </div>
+            <p class="report-desc">{{ report.description }}</p>
+            <p class="report-meta">举报人：{{ report.reporter?.nickname }} | {{ formatDate(report.created_at) }}</p>
+          </div>
+        </div>
+        
+        <div v-if="selectedReportId" class="handle-section">
+          <h4>处理举报</h4>
+          <textarea 
+            v-model="handleResult" 
+            placeholder="请输入处理结果..."
+            class="result-textarea"
+          ></textarea>
+          <div class="handle-buttons">
+            <button @click="handleReport('approved')" :disabled="isHandling" class="handle-btn approve">
+              {{ isHandling ? '处理中...' : '确认举报（下架商品）' }}
+            </button>
+            <button @click="handleReport('rejected')" :disabled="isHandling" class="handle-btn reject">
+              {{ isHandling ? '处理中...' : '驳回举报' }}
+            </button>
           </div>
         </div>
       </div>
@@ -810,6 +1011,247 @@ onMounted(() => {
 }
 
 .submit-offer-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+/* 管理员操作按钮 */
+.admin-actions {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #EDE9FE;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.admin-btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.25s ease;
+  background: linear-gradient(135deg, #7C3AED, #6D28D9);
+  color: white;
+  box-shadow: 0 4px 14px rgba(124, 58, 237, 0.25);
+}
+
+.admin-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(124, 58, 237, 0.35);
+}
+
+.admin-btn.warning {
+  background: linear-gradient(135deg, #F59E0B, #D97706);
+  box-shadow: 0 4px 14px rgba(245, 158, 11, 0.25);
+}
+
+.admin-btn.warning:hover {
+  box-shadow: 0 6px 20px rgba(245, 158, 11, 0.35);
+}
+
+.admin-btn.danger {
+  background: linear-gradient(135deg, #EF4444, #DC2626);
+  box-shadow: 0 4px 14px rgba(239, 68, 68, 0.25);
+}
+
+.admin-btn.danger:hover {
+  box-shadow: 0 6px 20px rgba(239, 68, 68, 0.35);
+}
+
+/* 管理员举报处理面板 */
+.admin-report-panel {
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 4px 24px rgba(124, 58, 237, 0.08);
+  padding: 24px;
+  margin-top: 20px;
+  border: 1px solid rgba(239, 68, 68, 0.1);
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid #EDE9FE;
+}
+
+.panel-header h3 {
+  color: #EF4444;
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.back-btn {
+  padding: 8px 16px;
+  background: #F3F4F6;
+  color: #6B7280;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.back-btn:hover {
+  background: #E5E7EB;
+}
+
+.empty-reports {
+  text-align: center;
+  padding: 40px;
+  color: #999;
+}
+
+.reports-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.report-item {
+  padding: 16px;
+  border: 2px solid #EDE9FE;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.report-item:hover {
+  border-color: #EF4444;
+  background: #FEF2F2;
+}
+
+.report-item.selected {
+  border-color: #EF4444;
+  background: #FEF2F2;
+}
+
+.report-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.report-reason {
+  font-weight: 600;
+  color: #EF4444;
+  font-size: 14px;
+}
+
+.report-status {
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.report-status.pending {
+  background: #FEF3C7;
+  color: #D97706;
+}
+
+.report-status.approved {
+  background: #D1FAE5;
+  color: #059669;
+}
+
+.report-status.rejected {
+  background: #FEE2E2;
+  color: #DC2626;
+}
+
+.report-desc {
+  color: #6B7280;
+  font-size: 14px;
+  margin: 0 0 8px 0;
+  line-height: 1.5;
+}
+
+.report-meta {
+  color: #9CA3AF;
+  font-size: 12px;
+  margin: 0;
+}
+
+.handle-section {
+  background: #F9FAFB;
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.handle-section h4 {
+  color: #374151;
+  margin: 0 0 15px 0;
+  font-size: 16px;
+}
+
+.result-textarea {
+  width: 100%;
+  min-height: 100px;
+  padding: 12px 16px;
+  border: 2px solid #E5E7EB;
+  border-radius: 10px;
+  font-size: 14px;
+  resize: vertical;
+  box-sizing: border-box;
+  margin-bottom: 15px;
+  outline: none;
+  transition: all 0.25s ease;
+}
+
+.result-textarea:focus {
+  border-color: #EF4444;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+
+.handle-buttons {
+  display: flex;
+  gap: 12px;
+}
+
+.handle-btn {
+  flex: 1;
+  padding: 12px;
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.handle-btn.approve {
+  background: linear-gradient(135deg, #EF4444, #DC2626);
+  color: white;
+  box-shadow: 0 4px 14px rgba(239, 68, 68, 0.25);
+}
+
+.handle-btn.approve:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(239, 68, 68, 0.35);
+}
+
+.handle-btn.reject {
+  background: linear-gradient(135deg, #6B7280, #4B5563);
+  color: white;
+  box-shadow: 0 4px 14px rgba(107, 114, 128, 0.25);
+}
+
+.handle-btn.reject:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(107, 114, 128, 0.35);
+}
+
+.handle-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
   transform: none !important;

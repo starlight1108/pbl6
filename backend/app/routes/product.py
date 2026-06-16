@@ -156,8 +156,9 @@ def update_product(product_id):
         return jsonify({'error': 'Product not found'}), 404
 
     user_id = int(get_jwt_identity())
+    user = User.query.get(user_id)
 
-    if product.seller_id != user_id:
+    if product.seller_id != user_id and not user.is_admin:
         return jsonify({'error': 'You can only update your own products'}), 403
 
     if request.content_type and 'multipart/form-data' in request.content_type:

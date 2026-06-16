@@ -23,7 +23,8 @@ const getTypeLabel = (type) => {
     'order': '订单通知',
     'system': '系统通知',
     'comment': '评论通知',
-    'favorite': '收藏通知'
+    'favorite': '收藏通知',
+    'report': '举报通知'
   }
   return labels[type] || '通知'
 }
@@ -34,7 +35,8 @@ const getTypeColor = (type) => {
     'order': '#FF9800',
     'system': '#9C27B0',
     'comment': '#4CAF50',
-    'favorite': '#E91E63'
+    'favorite': '#E91E63',
+    'report': '#F44336'
   }
   return colors[type] || '#666'
 }
@@ -93,6 +95,7 @@ onMounted(async () => {
     <div class="header">
       <h1>消息通知</h1>
       <div class="header-actions">
+        <button @click="router.push('/')" class="back-button">← 返回首页</button>
         <button @click="handleMarkAllRead" class="mark-all-btn" :disabled="notificationStore.unreadCount === 0">
           全部已读
         </button>
@@ -193,6 +196,12 @@ onMounted(async () => {
   font-weight: 700;
 }
 
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .mark-all-btn {
   padding: 8px 20px;
   background: linear-gradient(135deg, #7C3AED, #6D28D9);
@@ -212,6 +221,24 @@ onMounted(async () => {
 }
 
 .mark-all-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; }
+
+.back-button {
+  padding: 8px 16px;
+  background: white;
+  color: #7C3AED;
+  border: 2px solid #EDE9FE;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  transition: all 0.25s ease;
+  margin-right: 8px;
+}
+
+.back-button:hover {
+  background: #FAF5FF;
+  border-color: #7C3AED;
+}
 
 .content {
   max-width: 800px;

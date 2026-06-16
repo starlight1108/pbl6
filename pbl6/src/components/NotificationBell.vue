@@ -28,10 +28,13 @@ const totalUnread = computed(() => {
   return (notificationStore.unreadCount || 0) + (chatStore.totalUnreadCount || 0)
 })
 
-const toggleDropdown = () => {
+const toggleDropdown = async () => {
   showDropdown.value = !showDropdown.value
   if (showDropdown.value) {
     activeTab.value = 'notification'
+    if (notificationStore.notifications.length === 0) {
+      await notificationStore.fetchNotifications()
+    }
   }
 }
 
@@ -57,6 +60,39 @@ const goToReports = () => {
   showDropdown.value = false
 }
 
+const handleReportClick = async (notification) => {
+  try {
+    if (!notification.is_read) {
+      await notificationStore.markAsRead(notification.id)
+    }
+    
+    if (notification.related_id) {
+      if (notification.related_type === 'product') {
+        router.push(`/products/${notification.related_id}?fromReport=true`)
+      } else if (notification.related_type === 'report') {
+        router.push('/reports')
+      } else {
+        router.push(`/products/${notification.related_id}?fromReport=true`)
+      }
+    } else {
+      router.push('/reports')
+    }
+  } catch (error) {
+    console.error('处理举报通知点击失败:', error)
+    router.push('/reports')
+  } finally {
+    showDropdown.value = false
+  }
+}
+
+const handleNotificationClick = async (notification) => {
+  if (!notification.is_read) {
+    await notificationStore.markAsRead(notification.id)
+  }
+  router.push('/notifications')
+  showDropdown.value = false
+}
+
 const handleMarkAllRead = async () => {
   await notificationStore.markAllAsRead()
 }
@@ -74,7 +110,7 @@ const formatTime = (dateString) => {
 
 const startPolling = () => {
   if (userStore.isLoggedIn) {
-    notificationStore.fetchUnreadCount()
+    notificationStore.fetchNotifications()
     chatStore.loadConversations()
     pollingInterval = setInterval(() => {
       notificationStore.fetchUnreadCount()
@@ -132,6 +168,7 @@ onUnmounted(() => {
           <span v-if="chatStore.totalUnreadCount > 0" class="tab-badge">{{ chatStore.totalUnreadCount }}</span>
         </button>
         <button 
+          v-if="userStore.isAdmin"
           :class="['tab', { active: activeTab === 'report' }]" 
           @click="activeTab = 'report'"
         >
@@ -150,6 +187,7 @@ onUnmounted(() => {
               v-for="notification in notificationStore.notifications.slice(0, 5)" 
               :key="notification.id"
               :class="['item', { unread: !notification.is_read }]"
+              @click="handleNotificationClick(notification)"
             >
               <div class="item-content">
                 <div class="item-title">{{ notification.title }}</div>
@@ -192,7 +230,7 @@ onUnmounted(() => {
               v-for="notification in reportNotifications.slice(0, 5)" 
               :key="notification.id"
               :class="['item', { unread: !notification.is_read }]"
-              @click="goToReports"
+              @click="handleReportClick(notification)"
             >
               <div class="item-content">
                 <div class="item-title">
