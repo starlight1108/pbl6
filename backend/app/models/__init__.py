@@ -32,7 +32,6 @@ class User(db.Model):
             'email': self.email,
             'nickname': self.nickname,
             'avatar': avatar_url,
-            'is_admin': self.is_admin,
             'isAdmin': self.is_admin,
             'created_at': self.created_at.isoformat()
         }
