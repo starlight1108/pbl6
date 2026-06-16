@@ -41,11 +41,7 @@ body:
     attributes:
       label: 复现步骤
       description: 如何复现这个 Bug？
-      placeholder: |
-        1. 访问『...』
-        2. 点击『...』
-        3. 滚动到『...』
-        4. 看到错误
+      placeholder: 1. 访问『...』 2. 点击『...』 3. 看到错误
       value: |
         1.
         2.
@@ -85,7 +81,7 @@ body:
     attributes:
       label: API 响应（如有）
       description: 如果涉及后端接口，请粘贴接口返回的错误信息。
-      placeholder: {"code": 500, "message": "Internal Server Error"}
+      placeholder: '{"code": 500, "message": "Internal Server Error"}'
     validations:
       required: false
 
