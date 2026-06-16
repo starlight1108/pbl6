@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '../stores/user.js'
 
@@ -11,7 +11,17 @@ const formData = ref({
   password: ''
 })
 
+const rememberAccount = ref(false)
 const errorMessage = ref('')
+
+// 页面加载时，检查是否有保存的账号
+onMounted(() => {
+  const savedEmail = localStorage.getItem('rememberedEmail')
+  if (savedEmail) {
+    formData.value.email = savedEmail
+    rememberAccount.value = true
+  }
+})
 
 const handleSubmit = async () => {
   if (!formData.value.email || !formData.value.password) {
@@ -21,6 +31,15 @@ const handleSubmit = async () => {
   
   try {
     await userStore.login(formData.value.email, formData.value.password)
+    
+    // 如果勾选了记住账号，保存邮箱到localStorage
+    if (rememberAccount.value) {
+      localStorage.setItem('rememberedEmail', formData.value.email)
+    } else {
+      // 如果没有勾选，清除保存的邮箱
+      localStorage.removeItem('rememberedEmail')
+    }
+    
     router.push('/')
   } catch (error) {
     errorMessage.value = error.message || '登录失败，请重试'
@@ -55,6 +74,16 @@ const handleSubmit = async () => {
             placeholder="请输入密码"
             required
           >
+        </div>
+        
+        <div class="remember-account">
+          <input 
+            type="checkbox" 
+            id="rememberAccount" 
+            v-model="rememberAccount"
+            class="checkbox-input"
+          >
+          <label for="rememberAccount" class="checkbox-label">记住账号</label>
         </div>
         
         <div v-if="errorMessage" class="error-message">
@@ -151,6 +180,33 @@ input:focus {
 input::placeholder {
   color: #A78BFA;
   opacity: 0.6;
+}
+
+.remember-account {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
+  gap: 8px;
+}
+
+.checkbox-input {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: #7C3AED;
+  border-radius: 4px;
+}
+
+.checkbox-label {
+  color: #4C1D95;
+  font-size: 14px;
+  cursor: pointer;
+  user-select: none;
+  font-weight: 500;
+}
+
+.checkbox-label:hover {
+  color: #7C3AED;
 }
 
 .error-message {
