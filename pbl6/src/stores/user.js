@@ -1,4 +1,9 @@
 import { defineStore } from 'pinia'
+import { useChatStore } from './chat.js'
+import { useNotificationStore } from './notification.js'
+import { useProductStore } from './product.js'
+import { useOrderStore } from './order.js'
+import { useReportStore } from './report.js'
 
 const API_BASE_URL = 'http://127.0.0.1:5000/api'
 
@@ -88,6 +93,13 @@ export const useUserStore = defineStore('user', {
       this.token = ''
       this.isAdmin = false
       localStorage.removeItem('user')
+
+      // 清理其他 Pinia Store 状态
+      useChatStore().$reset()
+      useNotificationStore().$reset()
+      useProductStore().$reset()
+      useOrderStore().$reset()
+      useReportStore().$reset()
     },
     
     async refreshUserInfo() {

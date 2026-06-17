@@ -39,7 +39,8 @@ export const useChatStore = defineStore('chat', {
       if (!userStore.token || this.socket) return
 
       this.socket = io(`${WS_URL}/chat`, {
-        transports: ['websocket', 'polling']
+        transports: ['websocket', 'polling'],
+        reconnection: false
       })
 
       this.socket.on('connect', () => {
@@ -57,6 +58,9 @@ export const useChatStore = defineStore('chat', {
 
       this.socket.on('new_message', (message) => {
         if (this.currentMessages.some(m => m.id === message.id)) return
+        if (this.currentMessages.length > 500) {
+          this.currentMessages.shift()
+        }
         this.currentMessages.push(message)
         this.loadConversations()
       })
@@ -96,7 +100,8 @@ export const useChatStore = defineStore('chat', {
 
     disconnectWebSocket() {
       if (this.socket) {
-        this.socket.disconnect()
+        this.socket.removeAllListeners()
+        this.socket.close()
         this.socket = null
         this.isConnected = false
       }

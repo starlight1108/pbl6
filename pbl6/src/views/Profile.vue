@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '../stores/user.js'
 
@@ -11,6 +11,7 @@ const avatarPreview = ref('')
 const avatarFile = ref(null)
 const isLoading = ref(false)
 const message = ref('')
+const redirectTimer = ref(null)
 
 const getAvatarUrl = (path) => {
   const baseUrl = 'http://127.0.0.1:5000'
@@ -92,7 +93,7 @@ const handleSubmit = async () => {
       localStorage.setItem('user', JSON.stringify(user))
     }
 
-    setTimeout(() => {
+    redirectTimer.value = setTimeout(() => {
       router.push('/')
     }, 1500)
   } catch (error) {
@@ -109,6 +110,12 @@ const goBack = () => {
 onMounted(() => {
   nickname.value = userStore.nickname
   avatarPreview.value = getAvatarUrl(userStore.avatar)
+})
+
+onUnmounted(() => {
+  if (redirectTimer.value) {
+    clearTimeout(redirectTimer.value)
+  }
 })
 </script>
 
