@@ -11,6 +11,7 @@ class User(db.Model):
     password_hash = db.Column(db.String(256), nullable=False)
     nickname = db.Column(db.String(50))
     avatar = db.Column(db.String(200))
+    is_admin = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     products = db.relationship('Product', backref='seller', lazy='dynamic')
@@ -31,6 +32,7 @@ class User(db.Model):
             'email': self.email,
             'nickname': self.nickname,
             'avatar': avatar_url,
+            'isAdmin': self.is_admin,
             'created_at': self.created_at.isoformat()
         }
 

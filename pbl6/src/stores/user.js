@@ -15,7 +15,8 @@ export const useUserStore = defineStore('user', {
     nickname: '',
     avatar: '',
     token: '',
-    userId: null
+    userId: null,
+    isAdmin: false
   }),
   
   actions: {
@@ -42,6 +43,7 @@ export const useUserStore = defineStore('user', {
         this.avatar = data.user.avatar
         this.token = data.access_token
         this.userId = data.user.id
+        this.isAdmin = data.user.isAdmin || false
         
         localStorage.setItem('user', JSON.stringify({
           isLoggedIn: true,
@@ -50,7 +52,8 @@ export const useUserStore = defineStore('user', {
           nickname: data.user.nickname,
           avatar: data.user.avatar,
           token: data.access_token,
-          userId: data.user.id
+          userId: data.user.id,
+          isAdmin: data.user.isAdmin || false
         }))
         
         return data
@@ -115,6 +118,7 @@ export const useUserStore = defineStore('user', {
           this.id = data.user.id
           this.nickname = data.user.nickname
           this.avatar = data.user.avatar
+          this.isAdmin = data.user.isAdmin || false
           
           const userData = localStorage.getItem('user')
           if (userData) {
@@ -122,6 +126,7 @@ export const useUserStore = defineStore('user', {
             user.id = data.user.id
             user.nickname = data.user.nickname
             user.avatar = data.user.avatar
+            user.isAdmin = data.user.isAdmin || false
             localStorage.setItem('user', JSON.stringify(user))
           }
         }
@@ -140,7 +145,7 @@ export const useUserStore = defineStore('user', {
         this.avatar = user.avatar || ''
         this.token = user.token
         this.userId = user.userId
-        this.isAdmin = user.isAdmin || false
+        this.isAdmin = user.is_admin || user.isAdmin || false
         
         this.refreshUserInfo()
       }

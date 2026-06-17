@@ -2,7 +2,7 @@ from flask import request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from . import api_bp
 from .. import db
-from ..models import Report, Product, Notification
+from ..models import Report, Product, Notification, User
 from datetime import datetime
 
 
@@ -53,6 +53,19 @@ def create_report():
         description=description
     )
     db.session.add(report)
+    
+    admins = User.query.filter_by(is_admin=True).all()
+    for admin in admins:
+        notification = Notification(
+            user_id=admin.id,
+            type='report',
+            title=f'新举报：{product.title}',
+            content=f'用户举报了商品「{product.title}」，原因：{reason}',
+            related_id=product.id,
+            related_type='product'
+        )
+        db.session.add(notification)
+    
     db.session.commit()
     
     return jsonify({
@@ -119,11 +132,15 @@ def admin_get_reports():
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 20, type=int)
     status = request.args.get('status')
+    product_id = request.args.get('product_id', type=int)
     
     query = Report.query
     
     if status:
         query = query.filter_by(status=status)
+    
+    if product_id:
+        query = query.filter_by(product_id=product_id)
     
     pagination = query.order_by(Report.created_at.desc()).paginate(
         page=page, per_page=per_page, error_out=False

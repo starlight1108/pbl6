@@ -83,14 +83,39 @@ const handleChat = () => {
   isDropdownOpen.value = false
 }
 
-const handleDeleteProduct = async (id) => {
-  if (confirm('确定要删除这个商品吗？')) {
-    const success = await productStore.deleteProduct(id, userStore.token)
-    if (success) {
+const handleAdminProducts = () => {
+  router.push('/admin/products')
+  isDropdownOpen.value = false
+}
+
+const handleDeleteProduct = async (productId) => {
+  if (!confirm('确定要删除这个商品吗？')) {
+    return
+  }
+
+  try {
+    let url = `http://127.0.0.1:5000/api/products/${productId}`
+    if (userStore.isAdmin) {
+      url = `http://127.0.0.1:5000/api/admin/products/${productId}`
+    }
+    
+    const response = await fetch(url, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${userStore.token}`
+      }
+    })
+
+    if (response.ok) {
+      productStore.products = productStore.products.filter(p => p.id !== productId)
       alert('商品删除成功！')
     } else {
-      alert('删除失败，请重试')
+      const data = await response.json()
+      alert(data.error || '删除失败')
     }
+  } catch (error) {
+    console.error('删除失败:', error)
+    alert('删除失败')
   }
 }
 
@@ -104,6 +129,38 @@ const handleToggleProductStatus = async (id) => {
     alert('商品状态更新成功！')
   } else {
     alert('更新失败，请重试')
+  }
+}
+
+const handleMarkSold = async (productId) => {
+  if (!confirm('确定要标记此商品为已售出吗？')) {
+    return
+  }
+  
+  try {
+    const response = await fetch(`http://127.0.0.1:5000/api/admin/products/${productId}/status`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${userStore.token}`
+      },
+      body: JSON.stringify({ status: 'sold' })
+    })
+    
+    const data = await response.json()
+    
+    if (response.ok) {
+      const product = productStore.products.find(p => p.id === productId)
+      if (product) {
+        product.status = 'sold'
+      }
+      alert('标记已售出成功')
+    } else {
+      alert(data.error || '操作失败')
+    }
+  } catch (error) {
+    console.error('操作失败:', error)
+    alert('操作失败')
   }
 }
 
@@ -342,6 +399,10 @@ onMounted(async () => {
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                 发布商品
               </button>
+              <button v-if="userStore.isAdmin" @click="handleAdminProducts" class="dropdown-item admin-item">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                商品管理
+              </button>
               <div class="dropdown-divider"></div>
               <button @click="handleLogout" class="dropdown-item logout-item">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
@@ -360,6 +421,10 @@ onMounted(async () => {
       <div class="hero-section">
         <h2>发现校园好物</h2>
         <p>买卖二手物品，让闲置焕发新生</p>
+        <div v-if="userStore.isLoggedIn" class="admin-indicator">
+          <span>用户ID: {{ userStore.id }}</span>
+          <span>管理员: {{ userStore.isAdmin ? '是' : '否' }}</span>
+        </div>
       </div>
       
       <div class="search-section">
@@ -425,9 +490,10 @@ onMounted(async () => {
               <div class="product-header">
                 <h4 @click="handleViewDetail(product.id)">{{ product.title }}</h4>
                 <div class="product-actions">
-                  <button v-if="userStore.id && product.seller_id === userStore.id" @click.stop="handleEditProduct(product.id)" class="edit-button">修改</button>
-                  <button v-if="userStore.id && product.seller_id === userStore.id" @click.stop="handleToggleProductStatus(product.id)" class="status-button">{{ product.status === 'active' ? '下架' : '上架' }}</button>
-                  <button v-if="userStore.id && (product.seller_id === userStore.id || userStore.isAdmin)" @click.stop="handleDeleteProduct(product.id)" class="delete-button">删除</button>
+                  <button v-if="userStore.isLoggedIn && (product.seller_id === userStore.id || userStore.isAdmin)" @click.stop="handleEditProduct(product.id)" class="edit-button">修改</button>
+                  <button v-if="userStore.isLoggedIn && (product.seller_id === userStore.id || userStore.isAdmin)" @click.stop="handleToggleProductStatus(product.id)" class="status-button">{{ product.status === 'active' ? '下架' : '上架' }}</button>
+                  <button v-if="userStore.isLoggedIn && (product.seller_id === userStore.id || userStore.isAdmin) && product.status !== 'sold'" @click.stop="handleMarkSold(product.id)" class="mark-sold-button">标记售出</button>
+                  <button v-if="userStore.isLoggedIn && (product.seller_id === userStore.id || userStore.isAdmin)" @click.stop="handleDeleteProduct(product.id)" class="delete-button">删除</button>
                 </div>
               </div>
               <p class="product-seller">卖家：{{ product.seller?.nickname || '匿名' }}</p>
@@ -624,6 +690,7 @@ onMounted(async () => {
 .publish-item { color: #22C55E; }
 .notification-item { color: #7C3AED; }
 .report-item { color: #EF4444; }
+.admin-item { color: #F59E0B; }
 .logout-item { color: #EF4444; }
 
 /* ===== 内容区 ===== */
@@ -650,6 +717,24 @@ onMounted(async () => {
   opacity: 0.7;
   font-size: 16px;
   margin: 0;
+}
+
+.admin-indicator {
+  display: flex;
+  gap: 20px;
+  margin-top: 10px;
+  font-size: 12px;
+  color: #6B7280;
+  background: #FAF5FF;
+  padding: 8px 16px;
+  border-radius: 8px;
+  display: inline-flex;
+}
+
+.admin-indicator span {
+  padding: 2px 8px;
+  background: white;
+  border-radius: 4px;
 }
 
 /* ===== 搜索区（Hero 风格） ===== */
@@ -965,6 +1050,16 @@ onMounted(async () => {
   color: white;
 }
 
+.mark-sold-button {
+  background: #DBEAFE;
+  color: #2563EB;
+}
+
+.mark-sold-button:hover {
+  background: #2563EB;
+  color: white;
+}
+
 .delete-button {
   background: #FEE2E2;
   color: #EF4444;
@@ -973,6 +1068,10 @@ onMounted(async () => {
 .delete-button:hover {
   background: #EF4444;
   color: white;
+}
+
+.admin-action {
+  border: 1px dashed #F59E0B;
 }
 
 .product-description {
