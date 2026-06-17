@@ -21,8 +21,11 @@
     "test:e2e:order": "npx playwright test --config=tests/playwright.config.js tests/ai-automation/04-order.flow.spec.js"
   },
   "dependencies": {
+    "autoprefixer": "^10.5.0",
     "pinia": "^3.0.3",
+    "postcss": "^8.5.15",
     "socket.io-client": "^4.8.3",
+    "tailwindcss": "^3.4.19",
     "vue": "^3.5.22",
     "vue-router": "^4.5.1"
   },
