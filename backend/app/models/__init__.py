@@ -286,6 +286,12 @@ class Order(db.Model):
     seller_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     final_price = db.Column(db.Numeric(10, 2), nullable=False)
     status = db.Column(db.String(20), default='pending')
+    transaction_type = db.Column(db.String(20), default='offline')
+    payment_method = db.Column(db.String(50), nullable=True)
+    paid_at = db.Column(db.DateTime, nullable=True)
+    delivery_method = db.Column(db.String(50), nullable=True)
+    tracking_number = db.Column(db.String(200), nullable=True)
+    auto_complete_at = db.Column(db.DateTime, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -328,8 +334,43 @@ class Order(db.Model):
             'seller': seller_info,
             'final_price': float(self.final_price) if self.final_price else None,
             'status': self.status,
+            'transaction_type': self.transaction_type,
+            'payment_method': self.payment_method,
+            'paid_at': self.paid_at.isoformat() if self.paid_at else None,
+            'delivery_method': self.delivery_method,
+            'tracking_number': self.tracking_number,
+            'auto_complete_at': self.auto_complete_at.isoformat() if self.auto_complete_at else None,
             'created_at': self.created_at.isoformat(),
             'updated_at': self.updated_at.isoformat()
+        }
+
+
+class Transaction(db.Model):
+    __tablename__ = 'transactions'
+
+    id = db.Column(db.Integer, primary_key=True)
+    order_id = db.Column(db.Integer, db.ForeignKey('orders.id'), nullable=False)
+    buyer_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    seller_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    amount = db.Column(db.Numeric(10, 2), nullable=False)
+    type = db.Column(db.String(20), nullable=False)
+    status = db.Column(db.String(20), default='success')
+    transaction_no = db.Column(db.String(100), unique=True, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    order = db.relationship('Order')
+    buyer = db.relationship('User', foreign_keys=[buyer_id])
+    seller = db.relationship('User', foreign_keys=[seller_id])
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'order_id': self.order_id,
+            'amount': float(self.amount) if self.amount else None,
+            'type': self.type,
+            'status': self.status,
+            'transaction_no': self.transaction_no,
+            'created_at': self.created_at.isoformat()
         }
 
 

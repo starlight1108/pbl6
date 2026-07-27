@@ -2,11 +2,14 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '../stores/user.js'
+import { useOrderStore } from '../stores/order.js'
 import ReportModal from '../components/ReportModal.vue'
+import CheckoutDialog from '../components/CheckoutDialog.vue'
 
 const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
+const orderStore = useOrderStore()
 
 const product = ref(null)
 const comments = ref([])
@@ -14,6 +17,7 @@ const newComment = ref('')
 const isLoading = ref(true)
 const isSubmitting = ref(false)
 const showReportModal = ref(false)
+const showCheckout = ref(false)
 
 // 卖家修改价格相关
 const editPrice = ref('')
@@ -332,6 +336,17 @@ const contactSeller = async () => {
   }
 }
 
+const openCheckout = () => {
+  showCheckout.value = true
+}
+
+const handleOrderSuccess = async (order) => {
+  const typeLabel = order.transaction_type === 'online' ? '线上交易' : '线下交易'
+  if (confirm(`订单创建成功！(#${order.id})\n交易方式：${typeLabel}\n金额：¥${order.final_price.toFixed(2)}\n\n点击确定查看订单详情`)) {
+    router.push(`/my-orders/${order.id}`)
+  }
+}
+
 const isSeller = () => {
   return userStore.userId && product.value && product.value.seller_id === userStore.userId
 }
@@ -401,8 +416,9 @@ onMounted(async () => {
           
 
           <div v-if="userStore.token && !isSeller()" class="product-actions">
-            <button @click="contactSeller" class="contact-btn">联系卖家</button>
-            <button @click="showReportModal = true" class="report-btn">举报商品</button>
+            <button @click="contactSeller" class="contact-btn">💬 联系卖家</button>
+            <button v-if="product.status === 'active'" @click="openCheckout" class="buy-btn">🛒 立即购买</button>
+            <button @click="showReportModal = true" class="report-btn">举报</button>
           </div>
           
           <div v-if="userStore.isAdmin" class="admin-actions">
@@ -470,6 +486,16 @@ onMounted(async () => {
         :productTitle="product.title"
         @close="showReportModal = false"
         @success="showReportModal = false"
+      />
+
+      <CheckoutDialog
+        v-if="showCheckout"
+        :productId="product.id"
+        :productTitle="product.title"
+        :productPrice="product.price"
+        :sellerNickname="product.seller?.nickname || '卖家'"
+        @close="showCheckout = false"
+        @success="handleOrderSuccess"
       />
 
       <div class="comments-section">
@@ -740,6 +766,25 @@ onMounted(async () => {
 .contact-btn:hover {
   transform: translateY(-1px);
   box-shadow: 0 8px 25px rgba(34, 197, 94, 0.35);
+}
+
+.buy-btn {
+  padding: 12px 32px;
+  background: linear-gradient(135deg, #7C3AED, #6D28D9);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  box-shadow: 0 4px 14px rgba(124, 58, 237, 0.25);
+  margin-right: 10px;
+}
+
+.buy-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 25px rgba(124, 58, 237, 0.35);
 }
 
 .report-btn {

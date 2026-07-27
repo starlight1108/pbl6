@@ -20,6 +20,7 @@ const typingTimeout = ref(null)
 // 交易弹窗状态
 const showTradeModal = ref(false)
 const tradePrice = ref('')
+const tradeType = ref('online')
 const isSubmittingTrade = ref(false)
 
 const conversation = computed(() => {
@@ -119,8 +120,8 @@ const openTradeModal = () => {
     alert('该会话没有关联的商品，无法发起交易')
     return
   }
-  // 从 product_id 获取价格（如果没有价格信息，留空让用户输入）
   tradePrice.value = ''
+  tradeType.value = 'online'
   showTradeModal.value = true
 }
 
@@ -145,7 +146,8 @@ const submitTrade = async () => {
     const finalPrice = parseFloat(tradePrice.value)
     const order = await orderStore.createOrder(
       conversation.value.product_id,
-      finalPrice
+      finalPrice,
+      tradeType.value
     )
 
     closeTradeModal()
@@ -307,7 +309,23 @@ watch(() => chatStore.currentMessages.length, () => {
             class="trade-input"
           >
         </div>
-        <p class="form-tip">创建订单后，对方将收到通知。交易完成后可确认收货。</p>
+
+        <!-- 交易方式选择 -->
+        <div class="form-group">
+          <label>交易方式</label>
+          <div class="trade-type-options">
+            <label :class="['trade-type-option', { active: tradeType === 'online' }]">
+              <input type="radio" value="online" v-model="tradeType" class="trade-type-radio">
+              <span class="trade-type-label">🔒 线上交易（平台担保）</span>
+            </label>
+            <label :class="['trade-type-option', { active: tradeType === 'offline' }]">
+              <input type="radio" value="offline" v-model="tradeType" class="trade-type-radio">
+              <span class="trade-type-label">🤝 线下交易（自行面交）</span>
+            </label>
+          </div>
+        </div>
+
+        <p class="form-tip">创建订单后，对方将收到通知。</p>
       </div>
       <div class="modal-footer">
         <button @click="closeTradeModal" class="cancel-btn">取消</button>
@@ -673,6 +691,43 @@ watch(() => chatStore.currentMessages.length, () => {
   color: #9CA3AF;
   margin: 0;
   line-height: 1.5;
+}
+
+.trade-type-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.trade-type-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border: 2px solid #EDE9FE;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.trade-type-option:hover {
+  border-color: #C4B5FD;
+  background: #FAF5FF;
+}
+
+.trade-type-option.active {
+  border-color: #7C3AED;
+  background: #F5F3FF;
+}
+
+.trade-type-radio {
+  display: none;
+}
+
+.trade-type-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a1a2e;
 }
 
 .modal-footer {

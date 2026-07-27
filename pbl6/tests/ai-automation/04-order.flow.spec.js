@@ -280,7 +280,7 @@ test.describe('📋 交易管理 - 4.1 订单管理', () => {
     });
     expect(response.status()).toBe(400);
     const data = await response.json();
-    expect(data.error).toContain('Only pending orders can be canceled');
+    expect(data.error).toContain('当前状态不可取消');
   });
 });
 
