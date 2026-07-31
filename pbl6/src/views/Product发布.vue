@@ -47,7 +47,7 @@ const submitForm = async () => {
       ...product.value,
       price: parseFloat(product.value.price),
       image: selectedFile.value
-    }, userStore.token)
+    })
     
     alert('商品发布成功！')
     router.push('/')

@@ -1,7 +1,5 @@
 import { defineStore } from 'pinia'
-import { useUserStore } from './user.js'
-
-const API_BASE_URL = 'http://127.0.0.1:5000/api'
+import request, { publicRequest } from '@/utils/request'
 
 export const useReportStore = defineStore('report', {
   state: () => ({
@@ -13,18 +11,10 @@ export const useReportStore = defineStore('report', {
   }),
   
   actions: {
-    getAuthHeaders() {
-      const userStore = useUserStore()
-      return {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${userStore.token}`
-      }
-    },
     
     async fetchReasons() {
       try {
-        const response = await fetch(`${API_BASE_URL}/reports/reasons`)
-        const data = await response.json()
+        const data = await publicRequest.get('/reports/reasons')
         this.reasons = data.reasons
         return data.reasons
       } catch (error) {
@@ -34,21 +24,11 @@ export const useReportStore = defineStore('report', {
     
     async createReport(productId, reason, description = '') {
       try {
-        const response = await fetch(`${API_BASE_URL}/reports`, {
-          method: 'POST',
-          headers: this.getAuthHeaders(),
-          body: JSON.stringify({
-            product_id: productId,
-            reason: reason,
-            description: description
-          })
+        const data = await request.post('/reports', {
+          product_id: productId,
+          reason: reason,
+          description: description
         })
-        
-        const data = await response.json()
-        
-        if (!response.ok) {
-          throw new Error(data.error || '举报失败')
-        }
         
         return data
       } catch (error) {
@@ -58,18 +38,10 @@ export const useReportStore = defineStore('report', {
     
     async fetchReports(page = 1, perPage = 20, status = null) {
       try {
-        let url = `${API_BASE_URL}/reports?page=${page}&per_page=${perPage}`
-        if (status) url += `&status=${status}`
+        const params = { page, per_page: perPage }
+        if (status) params.status = status
         
-        const response = await fetch(url, {
-          headers: this.getAuthHeaders()
-        })
-        
-        const data = await response.json()
-        
-        if (!response.ok) {
-          throw new Error(data.error || '获取举报列表失败')
-        }
+        const data = await request.get('/reports', { params })
         
         this.reports = data.reports
         this.total = data.total
@@ -84,15 +56,7 @@ export const useReportStore = defineStore('report', {
     
     async fetchReport(reportId) {
       try {
-        const response = await fetch(`${API_BASE_URL}/reports/${reportId}`, {
-          headers: this.getAuthHeaders()
-        })
-        
-        const data = await response.json()
-        
-        if (!response.ok) {
-          throw new Error(data.error || '获取举报详情失败')
-        }
+        const data = await request.get(`/reports/${reportId}`)
         
         return data.report
       } catch (error) {

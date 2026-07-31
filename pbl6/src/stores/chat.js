@@ -1,8 +1,8 @@
 import { defineStore } from 'pinia'
 import { useUserStore } from './user.js'
 import { io } from 'socket.io-client'
+import request from '@/utils/request'
 
-const API_BASE_URL = 'http://127.0.0.1:5000'
 const WS_URL = 'http://127.0.0.1:5000'
 
 export const useChatStore = defineStore('chat', {
@@ -26,14 +26,6 @@ export const useChatStore = defineStore('chat', {
   },
 
   actions: {
-    getAuthHeaders() {
-      const userStore = useUserStore()
-      return {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${userStore.token}`
-      }
-    },
-
     connectWebSocket() {
       const userStore = useUserStore()
       if (!userStore.token || this.socket) return
@@ -109,27 +101,18 @@ export const useChatStore = defineStore('chat', {
 
     async loadConversations() {
       try {
-        const response = await fetch(`${API_BASE_URL}/api/conversations`, {
-          headers: this.getAuthHeaders()
-        })
-        if (response.ok) {
-          const data = await response.json()
-          this.conversations = data.conversations
-        }
+        const data = await request.get('/conversations')
+        this.conversations = data.conversations
       } catch (error) {
         console.error('加载会话列表失败:', error)
       }
     },
 
     async createConversation(sellerId, productId) {
-      const response = await fetch(`${API_BASE_URL}/api/conversations`, {
-        method: 'POST',
-        headers: this.getAuthHeaders(),
-        body: JSON.stringify({ seller_id: sellerId, product_id: productId })
+      const data = await request.post('/conversations', {
+        seller_id: sellerId,
+        product_id: productId
       })
-
-      const data = await response.json()
-      if (!response.ok) throw new Error(data.error || '创建会话失败')
 
       if (this.socket && this.isConnected) {
         this.socket.emit('join_room', { room: `conversation_${data.conversation.id}` })
@@ -141,16 +124,13 @@ export const useChatStore = defineStore('chat', {
     async loadMessages(conversationId, page = 1) {
       this.loading = true
       try {
-        const response = await fetch(`${API_BASE_URL}/api/conversations/${conversationId}/messages?page=${page}&per_page=50`, {
-          headers: this.getAuthHeaders()
+        const data = await request.get(`/conversations/${conversationId}/messages`, {
+          params: { page, per_page: 50 }
         })
-        if (response.ok) {
-          const data = await response.json()
-          this.currentMessages = page === 1 ? data.messages : [...data.messages, ...this.currentMessages]
-          this.totalMessages = data.total
-          this.currentPage = data.current_page
-          this.totalPages = data.pages
-        }
+        this.currentMessages = page === 1 ? data.messages : [...data.messages, ...this.currentMessages]
+        this.totalMessages = data.total
+        this.currentPage = data.current_page
+        this.totalPages = data.pages
       } catch (error) {
         console.error('加载消息失败:', error)
       } finally {
@@ -160,16 +140,7 @@ export const useChatStore = defineStore('chat', {
 
     async sendMessage(conversationId, content) {
       try {
-        const response = await fetch(`${API_BASE_URL}/api/conversations/${conversationId}/messages`, {
-          method: 'POST',
-          headers: this.getAuthHeaders(),
-          body: JSON.stringify({ content })
-        })
-
-        if (!response.ok) {
-          const data = await response.json()
-          throw new Error(data.error || '发送失败')
-        }
+        await request.post(`/conversations/${conversationId}/messages`, { content })
 
         await this.loadConversations()
         return true
@@ -202,10 +173,7 @@ export const useChatStore = defineStore('chat', {
 
     async markAsRead(conversationId) {
       try {
-        await fetch(`${API_BASE_URL}/api/conversations/${conversationId}/read`, {
-          method: 'PUT',
-          headers: this.getAuthHeaders()
-        })
+        await request.put(`/conversations/${conversationId}/read`)
         const conv = this.conversations.find(c => c.id === conversationId)
         if (conv) conv.unread_count = 0
       } catch (error) {

@@ -1,7 +1,5 @@
 import { defineStore } from 'pinia'
-import { useUserStore } from './user.js'
-
-const API_BASE_URL = 'http://127.0.0.1:5000/api'
+import request, { publicRequest } from '@/utils/request'
 
 export const useProductStore = defineStore('product', {
   state: () => ({
@@ -13,28 +11,16 @@ export const useProductStore = defineStore('product', {
   }),
   
   actions: {
-    getAuthHeaders() {
-      const userStore = useUserStore()
-      return {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${userStore.token}`
-      }
-    },
     
     async fetchProducts(page = 1, perPage = 20, category = null, keyword = null, sortBy = 'created_at', sortOrder = 'desc') {
       try {
-        let url = `${API_BASE_URL}/products?page=${page}&per_page=${perPage}`
-        if (category) url += `&category=${encodeURIComponent(category)}`
-        if (keyword) url += `&keyword=${encodeURIComponent(keyword)}`
-        if (sortBy) url += `&sort_by=${encodeURIComponent(sortBy)}`
-        if (sortOrder) url += `&sort_order=${encodeURIComponent(sortOrder)}`
+        const params = { page, per_page: perPage }
+        if (category) params.category = category
+        if (keyword) params.keyword = keyword
+        if (sortBy) params.sort_by = sortBy
+        if (sortOrder) params.sort_order = sortOrder
         
-        const response = await fetch(url)
-        const data = await response.json()
-        
-        if (!response.ok) {
-          throw new Error(data.error || '获取商品列表失败')
-        }
+        const data = await publicRequest.get('/products', { params })
         
         this.products = data.products
         this.total = data.total
@@ -49,12 +35,7 @@ export const useProductStore = defineStore('product', {
     
     async fetchProductDetail(productId) {
       try {
-        const response = await fetch(`${API_BASE_URL}/products/${productId}`)
-        const data = await response.json()
-        
-        if (!response.ok) {
-          throw new Error(data.error || '获取商品详情失败')
-        }
+        const data = await publicRequest.get(`/products/${productId}`)
         
         this.currentProduct = data.product
         return data.product
@@ -63,7 +44,7 @@ export const useProductStore = defineStore('product', {
       }
     },
     
-    async addProduct(product, token) {
+    async addProduct(product) {
       try {
         const formData = new FormData()
         formData.append('title', product.name)
@@ -75,78 +56,35 @@ export const useProductStore = defineStore('product', {
           formData.append('image', product.image)
         }
         
-        console.log('发送请求到:', `${API_BASE_URL}/products`)
-        console.log('token长度:', token ? token.length : 0)
-        console.log('token前20字符:', token ? token.substring(0, 20) + '...' : '空')
-        console.log('formData内容:', {
-          title: product.name,
-          price: product.price,
-          description: product.description,
-          category: product.category,
-          hasImage: !!product.image
-        })
+        const data = await request.post('/products', formData)
         
-        const response = await fetch(`${API_BASE_URL}/products`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`
-          },
-          body: formData
-        })
-        
-        console.log('响应状态:', response.status)
-        
-        if (response.status === 401) {
-          console.error('401未授权 - token可能过期或无效')
-          const userStore = useUserStore()
-          userStore.logout()
-          throw new Error('登录状态已过期，请重新登录')
-        }
-        
-        const data = await response.json()
-        console.log('响应数据:', data)
-        
-        if (response.ok) {
-          this.products.unshift(data.product)
-          return data.product
-        } else {
-          throw new Error(data.error || '发布商品失败，状态码: ' + response.status)
-        }
+        this.products.unshift(data.product)
+        return data.product
       } catch (error) {
         console.error('发布商品失败:', error)
         throw error
       }
     },
     
-    async toggleProductStatus(id, token) {
+    async toggleProductStatus(id) {
       try {
         const product = this.products.find(p => p.id === id)
         const newStatus = product?.status === 'active' ? 'inactive' : 'active'
         
-        const response = await fetch(`${API_BASE_URL}/products/${id}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({ status: newStatus })
-        })
+        await request.put(`/products/${id}`, { status: newStatus })
         
-        if (response.ok) {
-          const index = this.products.findIndex(p => p.id === id)
-          if (index !== -1) {
-            this.products[index].status = newStatus
-          }
-          return true
+        const index = this.products.findIndex(p => p.id === id)
+        if (index !== -1) {
+          this.products[index].status = newStatus
         }
-        return false
+        return true
       } catch (error) {
         console.error('更新商品状态失败:', error)
         return false
       }
     },
     
-    async updateProduct(id, productData, token) {
+    async updateProduct(id, productData) {
       try {
         const formData = new FormData()
         
@@ -157,19 +95,7 @@ export const useProductStore = defineStore('product', {
         if (productData.status) formData.append('status', productData.status)
         if (productData.image) formData.append('image', productData.image)
         
-        const response = await fetch(`${API_BASE_URL}/products/${id}`, {
-          method: 'PUT',
-          headers: {
-            'Authorization': `Bearer ${token}`
-          },
-          body: formData
-        })
-        
-        const data = await response.json()
-        
-        if (!response.ok) {
-          throw new Error(data.error || '更新商品失败')
-        }
+        const data = await request.put(`/products/${id}`, formData)
         
         const index = this.products.findIndex(p => p.id === id)
         if (index !== -1) {
@@ -182,20 +108,12 @@ export const useProductStore = defineStore('product', {
       }
     },
     
-    async deleteProduct(id, token) {
+    async deleteProduct(id) {
       try {
-        const response = await fetch(`${API_BASE_URL}/products/${id}`, {
-          method: 'DELETE',
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        })
+        await request.delete(`/products/${id}`)
         
-        if (response.ok) {
-          this.products = this.products.filter(p => p.id !== id)
-          return true
-        }
-        return false
+        this.products = this.products.filter(p => p.id !== id)
+        return true
       } catch (error) {
         console.error('删除商品失败:', error)
         return false
@@ -204,17 +122,7 @@ export const useProductStore = defineStore('product', {
     
     async createProduct(productData) {
       try {
-        const response = await fetch(`${API_BASE_URL}/products`, {
-          method: 'POST',
-          headers: this.getAuthHeaders(),
-          body: JSON.stringify(productData)
-        })
-        
-        const data = await response.json()
-        
-        if (!response.ok) {
-          throw new Error(data.error || '发布商品失败')
-        }
+        const data = await request.post('/products', productData)
         
         return data
       } catch (error) {
@@ -222,22 +130,9 @@ export const useProductStore = defineStore('product', {
       }
     },
     
-    async addFavorite(productId, token) {
+    async addFavorite(productId) {
       try {
-        const response = await fetch(`${API_BASE_URL}/favorites`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({ product_id: productId })
-        })
-        
-        const data = await response.json()
-        
-        if (!response.ok) {
-          throw new Error(data.error || '添加收藏失败')
-        }
+        const data = await request.post('/favorites', { product_id: productId })
         
         return data
       } catch (error) {
@@ -245,20 +140,9 @@ export const useProductStore = defineStore('product', {
       }
     },
     
-    async removeFavorite(productId, token) {
+    async removeFavorite(productId) {
       try {
-        const response = await fetch(`${API_BASE_URL}/favorites/${productId}`, {
-          method: 'DELETE',
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        })
-        
-        const data = await response.json()
-        
-        if (!response.ok) {
-          throw new Error(data.error || '取消收藏失败')
-        }
+        const data = await request.delete(`/favorites/${productId}`)
         
         return data
       } catch (error) {
@@ -266,19 +150,9 @@ export const useProductStore = defineStore('product', {
       }
     },
     
-    async checkFavorite(productId, token) {
+    async checkFavorite(productId) {
       try {
-        const response = await fetch(`${API_BASE_URL}/favorites/check/${productId}`, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        })
-        
-        const data = await response.json()
-        
-        if (!response.ok) {
-          throw new Error(data.error || '检查收藏状态失败')
-        }
+        const data = await request.get(`/favorites/check/${productId}`)
         
         return data.is_favorite
       } catch (error) {
@@ -286,24 +160,9 @@ export const useProductStore = defineStore('product', {
       }
     },
     
-    async getFavorites(token) {
+    async getFavorites() {
       try {
-        const response = await fetch(`${API_BASE_URL}/favorites`, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        })
-        
-        const data = await response.json()
-        console.log('Favorites API response:', data)
-        
-        if (!response.ok) {
-          const errorMsg = data.error || data.msg || '获取收藏列表失败'
-          if (errorMsg.includes('expired') || errorMsg.includes('过期')) {
-            throw new Error('token_expired')
-          }
-          throw new Error(errorMsg)
-        }
+        const data = await request.get('/favorites')
         
         if (!data.favorites || !Array.isArray(data.favorites)) {
           return []
@@ -318,12 +177,7 @@ export const useProductStore = defineStore('product', {
     
     async getCategories() {
       try {
-        const response = await fetch(`${API_BASE_URL}/categories`)
-        const data = await response.json()
-        
-        if (!response.ok) {
-          throw new Error(data.error || '获取分类失败')
-        }
+        const data = await publicRequest.get('/categories')
         
         return data.categories
       } catch (error) {

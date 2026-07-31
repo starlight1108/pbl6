@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useProductStore } from '../stores/product.js'
 import { useUserStore } from '../stores/user.js'
@@ -20,7 +20,6 @@ const imagePreview = ref(null)
 const categories = ['书籍教材', '电子数码', '生活用品', '交通工具', '体育用品', '服饰鞋包', '美妆护肤', '其他']
 const errorMessage = ref('')
 const isLoading = ref(false)
-const redirectTimer = ref(null)
 
 const handleFileChange = (event) => {
   const file = event.target.files[0]
@@ -71,21 +70,13 @@ const handleSubmit = async () => {
       price: parseFloat(formData.value.price),
       category: formData.value.category,
       image: selectedFile.value
-    }, userStore.token)
+    })
     
     alert('商品发布成功！')
     router.push('/')
   } catch (error) {
     console.error('发布商品失败:', error)
     errorMessage.value = error.message || '发布失败，请重试'
-    
-    if (error.message.includes('401') || error.message.includes('未授权')) {
-      errorMessage.value = '登录状态失效，请重新登录'
-      redirectTimer.value = setTimeout(() => {
-        userStore.logout()
-        router.push('/login')
-      }, 2000)
-    }
   } finally {
     isLoading.value = false
   }
@@ -100,16 +91,10 @@ onMounted(() => {
   console.log('User isLoggedIn:', userStore.isLoggedIn)
   console.log('User token exists:', !!userStore.token)
   console.log('User token:', userStore.token ? '***' : '空')
-  
+
   if (!userStore.isLoggedIn) {
     console.log('用户未登录，跳转登录页')
     router.push('/login')
-  }
-})
-
-onUnmounted(() => {
-  if (redirectTimer.value) {
-    clearTimeout(redirectTimer.value)
   }
 })
 </script>

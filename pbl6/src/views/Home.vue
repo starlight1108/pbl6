@@ -124,7 +124,7 @@ const handleEditProduct = (id) => {
 }
 
 const handleToggleProductStatus = async (id) => {
-  const success = await productStore.toggleProductStatus(id, userStore.token)
+  const success = await productStore.toggleProductStatus(id)
   if (success) {
     alert('商品状态更新成功！')
   } else {
@@ -261,7 +261,7 @@ const toggleShowFavorites = async () => {
     showFavoritesOnly.value = !showFavoritesOnly.value
     
     if (showFavoritesOnly.value) {
-      const favorites = await productStore.getFavorites(userStore.token)
+      const favorites = await productStore.getFavorites()
       productStore.products = favorites
       productStore.total = favorites.length
       productStore.pages = 1
@@ -303,11 +303,11 @@ const toggleFavorite = async (productId) => {
 
   try {
     if (favoriteStatus.value[productId]) {
-      await productStore.removeFavorite(productId, userStore.token)
+      await productStore.removeFavorite(productId)
       favoriteStatus.value[productId] = false
       alert('已取消收藏')
     } else {
-      await productStore.addFavorite(productId, userStore.token)
+      await productStore.addFavorite(productId)
       favoriteStatus.value[productId] = true
       alert('收藏成功')
     }
@@ -330,7 +330,7 @@ const checkFavoriteStatus = async () => {
   if (!userStore.isLoggedIn || !userStore.token) return
   
   for (const product of productStore.products) {
-    const isFavorite = await productStore.checkFavorite(product.id, userStore.token)
+    const isFavorite = await productStore.checkFavorite(product.id)
     favoriteStatus.value[product.id] = isFavorite
   }
 }

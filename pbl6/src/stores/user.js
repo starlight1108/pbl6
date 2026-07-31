@@ -1,11 +1,10 @@
 import { defineStore } from 'pinia'
+import request from '@/utils/request'
 import { useChatStore } from './chat.js'
 import { useNotificationStore } from './notification.js'
 import { useProductStore } from './product.js'
 import { useOrderStore } from './order.js'
 import { useReportStore } from './report.js'
-
-const API_BASE_URL = 'http://127.0.0.1:5000/api'
 
 export const useUserStore = defineStore('user', {
   state: () => ({
@@ -22,19 +21,7 @@ export const useUserStore = defineStore('user', {
   actions: {
     async login(email, password) {
       try {
-        const response = await fetch(`${API_BASE_URL}/auth/login`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ email, password })
-        })
-        
-        const data = await response.json()
-        
-        if (!response.ok) {
-          throw new Error(data.error || '登录失败')
-        }
+        const data = await request.post('/auth/login', { email, password })
         
         this.isLoggedIn = true
         this.id = data.user.id
@@ -64,19 +51,7 @@ export const useUserStore = defineStore('user', {
     
     async register(email, password, nickname) {
       try {
-        const response = await fetch(`${API_BASE_URL}/auth/register`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ email, password, nickname })
-        })
-        
-        const data = await response.json()
-        
-        if (!response.ok) {
-          throw new Error(data.error || '注册失败')
-        }
+        const data = await request.post('/auth/register', { email, password, nickname })
         
         return data
       } catch (error) {
@@ -107,28 +82,21 @@ export const useUserStore = defineStore('user', {
       if (this.avatar) return
       
       try {
-        const response = await fetch(`${API_BASE_URL}/user/profile`, {
-          headers: {
-            'Authorization': `Bearer ${this.token}`
-          }
-        })
+        const data = await request.get('/user/profile')
         
-        if (response.ok) {
-          const data = await response.json()
-          this.id = data.user.id
-          this.nickname = data.user.nickname
-          this.avatar = data.user.avatar
-          this.isAdmin = data.user.isAdmin || false
-          
-          const userData = localStorage.getItem('user')
-          if (userData) {
-            const user = JSON.parse(userData)
-            user.id = data.user.id
-            user.nickname = data.user.nickname
-            user.avatar = data.user.avatar
-            user.isAdmin = data.user.isAdmin || false
-            localStorage.setItem('user', JSON.stringify(user))
-          }
+        this.id = data.user.id
+        this.nickname = data.user.nickname
+        this.avatar = data.user.avatar
+        this.isAdmin = data.user.isAdmin || false
+        
+        const userData = localStorage.getItem('user')
+        if (userData) {
+          const user = JSON.parse(userData)
+          user.id = data.user.id
+          user.nickname = data.user.nickname
+          user.avatar = data.user.avatar
+          user.isAdmin = data.user.isAdmin || false
+          localStorage.setItem('user', JSON.stringify(user))
         }
       } catch (error) {
       }

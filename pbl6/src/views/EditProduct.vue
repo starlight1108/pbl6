@@ -87,7 +87,7 @@ const handleSubmit = async () => {
       price: parseFloat(formData.value.price),
       category: formData.value.category,
       image: selectedFile.value
-    }, userStore.token)
+    })
     
     alert('商品更新成功！')
     router.push('/')
