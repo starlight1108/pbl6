@@ -24,6 +24,9 @@ def create_app(config_name='default'):
 
     @app.route('/uploads/<subfolder>/<path:filename>')
     def serve_upload(subfolder, filename):
+        # 白名单校验，防止 subfolder 传入 '..' 造成路径遍历
+        if subfolder not in ('avatars', 'products'):
+            return jsonify({'error': 'Not found'}), 404
         return send_from_directory(os.path.join(app.config['UPLOAD_FOLDER'], subfolder), filename)
 
     db.init_app(app)
